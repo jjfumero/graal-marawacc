@@ -29,7 +29,7 @@
 \.dot$
 \.pyc$
 \.hprof$
-\javafilelist.txt$
+\javafilelist.*\.txt$
 \.hprof\.txt$
 ^doc/.*/dot_temp_
 ^doc/doxygen/.*$
