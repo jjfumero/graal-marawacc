@@ -1,3 +1,4 @@
+^mxbuild/
 ^build/
 ^build-nograal/
 ^build-nojvmci/
