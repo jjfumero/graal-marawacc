@@ -49,8 +49,7 @@ suite = {
                "name" : "truffle",
                "version" : "fd53ccebb10b21af953de2da4340a7d17b85e5ed",
                "urls" : [
-                    {"url" : "http://lafo.ssw.uni-linz.ac.at/hg/truffle", "kind" : "hg"},
-                    {"url" : "https://curio.ssw.jku.at/nexus/content/repositories/snapshots", "kind" : "binary"},
+                    {"url" : "ssh://hg@bitbucket.org/juanfumero/trufflex", "kind" : "hg"},
                 ]
             },
     ])
