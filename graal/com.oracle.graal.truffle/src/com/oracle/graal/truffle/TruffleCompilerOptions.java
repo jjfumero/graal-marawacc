@@ -183,5 +183,8 @@ public class TruffleCompilerOptions {
     @Option(help = "Enable support for simple infopoints in truffle partial evaluations.", type = OptionType.Debug)
     public static final OptionValue<Boolean> TruffleIterativePartialEscape = new OptionValue<>(false);
 
+    @Option(help = "Trace GraalIR for GPU.", type = OptionType.Debug)
+    public static final OptionValue<Boolean> TruffleTraceIRToGPU = new OptionValue<>(false);
+
     // @formatter:on
 }

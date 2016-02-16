@@ -50,10 +50,12 @@ import com.oracle.graal.debug.DebugCloseable;
 import com.oracle.graal.debug.DebugEnvironment;
 import com.oracle.graal.debug.DebugMemUseTracker;
 import com.oracle.graal.debug.DebugTimer;
+import com.oracle.graal.graph.Node;
 import com.oracle.graal.graphbuilderconf.GraphBuilderConfiguration;
 import com.oracle.graal.graphbuilderconf.GraphBuilderConfiguration.Plugins;
 import com.oracle.graal.lir.asm.CompilationResultBuilderFactory;
 import com.oracle.graal.lir.phases.LIRSuites;
+import com.oracle.graal.nodes.ParameterNode;
 import com.oracle.graal.nodes.StructuredGraph;
 import com.oracle.graal.nodes.StructuredGraph.AllowAssumptions;
 import com.oracle.graal.phases.OptimisticOptimizations;
@@ -149,11 +151,24 @@ public abstract class TruffleCompiler {
 
         compilationNotify.notifyCompilationStarted(compilable);
 
+        if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
+            System.out.println(compilable.getName());
+        }
+
         try {
             PhaseSuite<HighTierContext> graphBuilderSuite = createGraphBuilderSuite();
 
             try (DebugCloseable a = PartialEvaluationTime.start(); DebugCloseable c = PartialEvaluationMemUse.start()) {
                 graph = partialEvaluator.createGraph(compilable, AllowAssumptions.YES);
+
+                if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
+                    for (Node node : graph.getNodes()) {
+                        System.out.println(node);
+                        if (node instanceof ParameterNode) {
+                            System.out.println("ParameterNode: " + node.getClass());
+                        }
+                    }
+                }
             }
 
             if (Thread.currentThread().isInterrupted()) {
