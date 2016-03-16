@@ -883,6 +883,7 @@ suite = {
         "com.oracle.graal.api.runtime",
         "com.oracle.graal.runtime",
         "com.oracle.graal.replacements",
+		"com.oracle.graal.printer",
       ],
       "checkstyle" : "com.oracle.graal.graph",
       "annotationProcessors" : deps([

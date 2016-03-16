@@ -152,7 +152,7 @@ public abstract class TruffleCompiler {
         compilationNotify.notifyCompilationStarted(compilable);
 
         if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
-            System.out.println(compilable.getName());
+            System.out.println("GPU DEBUG: compiling <" + compilable.toString() + ">");
         }
 
         try {
@@ -162,12 +162,17 @@ public abstract class TruffleCompiler {
                 graph = partialEvaluator.createGraph(compilable, AllowAssumptions.YES);
 
                 if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
-                    for (Node node : graph.getNodes()) {
-                        System.out.println(node);
-                        if (node instanceof ParameterNode) {
-                            System.out.println("ParameterNode: " + node.getClass());
-                        }
-                    }
+
+                    // GraphPrinterDumpHandler printer = new GraphPrinterDumpHandler();
+                    // DebugScope.forceDump(graph, "afterPartialEvaluator");
+                    // printer.dump(graph, "graphToCompile");
+                    // printer.close();
+
+                    // for (Node node : graph.getNodes()) {
+                    // if (node instanceof ParameterNode) {
+                    // System.out.println(node);
+                    // }
+                    // }
                 }
             }
 
