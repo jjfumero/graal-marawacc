@@ -50,6 +50,7 @@ import com.oracle.graal.debug.DebugCloseable;
 import com.oracle.graal.debug.DebugEnvironment;
 import com.oracle.graal.debug.DebugMemUseTracker;
 import com.oracle.graal.debug.DebugTimer;
+import com.oracle.graal.debug.internal.DebugScope;
 import com.oracle.graal.graph.Node;
 import com.oracle.graal.graphbuilderconf.GraphBuilderConfiguration;
 import com.oracle.graal.graphbuilderconf.GraphBuilderConfiguration.Plugins;
@@ -63,6 +64,7 @@ import com.oracle.graal.phases.PhaseSuite;
 import com.oracle.graal.phases.tiers.HighTierContext;
 import com.oracle.graal.phases.tiers.Suites;
 import com.oracle.graal.phases.util.Providers;
+import com.oracle.graal.printer.GraphPrinterDumpHandler;
 import com.oracle.graal.truffle.nodes.AssumptionValidAssumption;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.nodes.SlowPathException;
@@ -163,16 +165,17 @@ public abstract class TruffleCompiler {
 
                 if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
 
-                    // GraphPrinterDumpHandler printer = new GraphPrinterDumpHandler();
-                    // DebugScope.forceDump(graph, "afterPartialEvaluator");
-                    // printer.dump(graph, "graphToCompile");
-                    // printer.close();
+                    GraphPrinterDumpHandler printer = new GraphPrinterDumpHandler();
+                    DebugScope.forceDump(graph, "afterPartialEvaluator");
+                    printer.dump(graph, "graphToCompile");
+                    printer.close();
 
-                    // for (Node node : graph.getNodes()) {
-                    // if (node instanceof ParameterNode) {
-                    // System.out.println(node);
-                    // }
-                    // }
+                    for (Node node : graph.getNodes()) {
+                        System.out.println(node);
+                        for (Node n : node.cfgSuccessors()) {
+                            System.out.println("\t" + n);
+                        }
+                    }
                 }
             }
 
