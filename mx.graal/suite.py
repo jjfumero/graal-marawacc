@@ -599,7 +599,9 @@ suite = {
     "com.oracle.graal.phases.common" : {
       "subDir" : "graal",
       "sourceDirs" : ["src"],
-      "dependencies" : ["com.oracle.graal.phases"],
+      "dependencies" : ["com.oracle.graal.phases",
+						"uk.ac.ed.marawacc.compilation",
+					    ],
       "annotationProcessors" : deps([
         "GRAAL_NODEINFO_PROCESSOR",
         "jvmci:JVMCI_OPTIONS_PROCESSOR"
@@ -959,6 +961,18 @@ suite = {
       "javaCompliance" : "1.8",
       "annotationProcessors" : deps(["jvmci:JVMCI_SERVICE_PROCESSOR"]),
       "workingSets" : "Graal,Truffle,SPARC",
+    },
+
+	# New Graal-Truffle-GPU package for GPU compilation
+    "uk.ac.ed.marawacc.compilation" : {
+      "subDir" : "graal",
+      "sourceDirs" : ["src"],
+      "dependencies" : [
+        "com.oracle.graal.phases",
+      ],
+      "checkstyle" : "com.oracle.graal.graph",
+      "javaCompliance" : "1.8",
+      "workingSets" : "Graal,Truffle",
     },
 
     # ------------- Salver -------------

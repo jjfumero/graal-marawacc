@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import uk.ac.ed.marawacc.compilation.MarawaccGraalIR;
 import jdk.vm.ci.code.CallingConvention;
 import jdk.vm.ci.code.CallingConvention.Type;
 import jdk.vm.ci.code.CodeCacheProvider;
@@ -147,6 +148,25 @@ public abstract class TruffleCompiler {
     public static final DebugMemUseTracker CompilationMemUse = Debug.memUseTracker("TruffleCompilationMemUse");
     public static final DebugMemUseTracker CodeInstallationMemUse = Debug.memUseTracker("TruffleCodeInstallationMemUse");
 
+    private static void debugGraphToGPU(StructuredGraph graph) {
+        System.out.println("Graph ID After PE: " + graph.graphId());
+        if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
+            GraphPrinterDumpHandler printer = new GraphPrinterDumpHandler();
+            DebugScope.forceDump(graph, "afterPartialEvaluator");
+            printer.dump(graph, "graphToCompile");
+            printer.close();
+
+            if (TruffleCompilerOptions.TrufflePrintIRToGPU.getValue()) {
+                for (Node node : graph.getNodes()) {
+                    System.out.println(node);
+                    for (Node n : node.cfgSuccessors()) {
+                        System.out.println("\t" + n);
+                    }
+                }
+            }
+        }
+    }
+
     @SuppressWarnings("try")
     public void compileMethod(final OptimizedCallTarget compilable) {
         StructuredGraph graph = null;
@@ -162,21 +182,12 @@ public abstract class TruffleCompiler {
 
             try (DebugCloseable a = PartialEvaluationTime.start(); DebugCloseable c = PartialEvaluationMemUse.start()) {
                 graph = partialEvaluator.createGraph(compilable, AllowAssumptions.YES);
+                debugGraphToGPU(graph);
+            }
 
-                if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
-
-                    GraphPrinterDumpHandler printer = new GraphPrinterDumpHandler();
-                    DebugScope.forceDump(graph, "afterPartialEvaluator");
-                    printer.dump(graph, "graphToCompile");
-                    printer.close();
-
-                    for (Node node : graph.getNodes()) {
-                        System.out.println(node);
-                        for (Node n : node.cfgSuccessors()) {
-                            System.out.println("\t" + n);
-                        }
-                    }
-                }
+            if (compilable.getIDForGPU() != -1) {
+                System.out.println("[]!!!!!!!!!!!!! Expression for GPU computation");
+                MarawaccGraalIR.INSTANCE.insertCallTargetID(graph, compilable.getIDForGPU());
             }
 
             if (Thread.currentThread().isInterrupted()) {

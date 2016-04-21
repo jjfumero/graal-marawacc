@@ -186,5 +186,8 @@ public class TruffleCompilerOptions {
     @Option(help = "Trace GraalIR for GPU.", type = OptionType.Debug)
     public static final OptionValue<Boolean> TruffleTraceIRToGPU = new OptionValue<>(true);
 
+    @Option(help = "Print GraalIR for the GPU.", type = OptionType.Debug)
+    public static final OptionValue<Boolean> TrufflePrintIRToGPU = new OptionValue<>(false);
+
     // @formatter:on
 }

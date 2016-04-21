@@ -39,6 +39,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -102,6 +103,8 @@ public class OptimizedCallTarget extends InstalledCode implements RootCallTarget
     private boolean compiling;
     private int cloneIndex;
 
+    private long targetID = -1;
+
     /**
      * When this call target is inlined, the inlining {@link InstalledCode} registers this
      * assumption. It gets invalidated when a node rewriting is performed. This ensures that all
@@ -111,6 +114,14 @@ public class OptimizedCallTarget extends InstalledCode implements RootCallTarget
 
     public final RootNode getRootNode() {
         return rootNode;
+    }
+
+    public void generateIDForGPU() {
+        targetID = (new Random()).nextLong();
+    }
+
+    public long getIDForGPU() {
+        return targetID;
     }
 
     public OptimizedCallTarget(OptimizedCallTarget sourceCallTarget, RootNode rootNode, GraalTruffleRuntime runtime, CompilationPolicy compilationPolicy, SpeculationLog speculationLog) {

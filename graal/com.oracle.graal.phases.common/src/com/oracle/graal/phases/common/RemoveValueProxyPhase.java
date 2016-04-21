@@ -22,6 +22,8 @@
  */
 package com.oracle.graal.phases.common;
 
+import uk.ac.ed.marawacc.compilation.MarawaccGraalIR;
+
 import com.oracle.graal.nodes.EntryProxyNode;
 import com.oracle.graal.nodes.FrameState;
 import com.oracle.graal.nodes.LoopExitNode;
@@ -49,5 +51,12 @@ public class RemoveValueProxyPhase extends Phase {
             }
         }
         graph.setHasValueProxies(false);
+
+        if (MarawaccGraalIR.INSTANCE.isCompiledGraph(graph.graphId())) {
+            System.out.println("Graph ID After RVPP: " + graph.graphId());
+            System.out.println("COMPILING FOR GPU!!! ");
+            MarawaccGraalIR.INSTANCE.updateGraph(graph);
+        }
+
     }
 }
