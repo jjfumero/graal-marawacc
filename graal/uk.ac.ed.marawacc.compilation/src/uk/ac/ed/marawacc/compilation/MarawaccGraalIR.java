@@ -1,6 +1,9 @@
 package uk.ac.ed.marawacc.compilation;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.oracle.graal.nodes.StructuredGraph;
 
@@ -9,10 +12,10 @@ public class MarawaccGraalIR {
     private static MarawaccGraalIR INSTANCE;
 
     // CallTargetID -> StructuredGraph
-    private ConcurrentHashMap<Long, StructuredGraph> compilationTable;
+    private Map<Long, StructuredGraph> compilationTable;
 
     // Graph ID -> CallTargetID
-    private ConcurrentHashMap<Long, Long> graphsTable;
+    private Map<Long, Long> graphsTable;
 
     public static MarawaccGraalIR getInstance() {
         if (INSTANCE == null) {
@@ -22,11 +25,11 @@ public class MarawaccGraalIR {
     }
 
     private MarawaccGraalIR() {
-        compilationTable = new ConcurrentHashMap<>();
-        graphsTable = new ConcurrentHashMap<>();
+        compilationTable = Collections.synchronizedMap(new HashMap<Long, StructuredGraph>());
+        graphsTable = Collections.synchronizedMap(new HashMap<Long, Long>());
     }
 
-    public synchronized void insertCallTargetID(StructuredGraph graph, long idCallTarget) {
+    public void insertCallTargetID(StructuredGraph graph, long idCallTarget) {
         graphsTable.put(graph.graphId(), idCallTarget);
     }
 
@@ -34,7 +37,7 @@ public class MarawaccGraalIR {
         return graphsTable.containsKey(graphID);
     }
 
-    public synchronized void updateGraph(StructuredGraph graph) {
+    public void updateGraph(StructuredGraph graph) {
         System.out.println("INSERTING GRAPH INTO THE COMPILATION TABLE: " + graph);
         Long idCallTarget = graphsTable.get(graph.graphId());
         if (idCallTarget != null) {
@@ -55,6 +58,7 @@ public class MarawaccGraalIR {
     }
 
     public StructuredGraph getCompiledGraph(long idCallTarget) {
+        System.out.println(compilationTable.get(idCallTarget));
         if (compilationTable.containsKey(idCallTarget)) {
             return compilationTable.get(idCallTarget);
         } else {
