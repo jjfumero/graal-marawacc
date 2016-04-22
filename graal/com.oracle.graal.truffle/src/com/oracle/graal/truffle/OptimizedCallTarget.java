@@ -117,7 +117,11 @@ public class OptimizedCallTarget extends InstalledCode implements RootCallTarget
     }
 
     public void generateIDForGPU() {
-        targetID = (new Random()).nextLong();
+        System.out.println("calling to generate");
+        if (this.targetID == -1) {
+            targetID = (new Random()).nextLong();
+            System.out.println("GENERETING GPU ID: " + targetID);
+        }
     }
 
     public long getIDForGPU() {

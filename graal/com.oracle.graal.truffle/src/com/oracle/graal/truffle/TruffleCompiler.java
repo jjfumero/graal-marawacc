@@ -186,8 +186,7 @@ public abstract class TruffleCompiler {
             }
 
             if (compilable.getIDForGPU() != -1) {
-                System.out.println("[]!!!!!!!!!!!!! Expression for GPU computation");
-                MarawaccGraalIR.INSTANCE.insertCallTargetID(graph, compilable.getIDForGPU());
+                MarawaccGraalIR.getInstance().insertCallTargetID(graph, compilable.getIDForGPU());
             }
 
             if (Thread.currentThread().isInterrupted()) {
