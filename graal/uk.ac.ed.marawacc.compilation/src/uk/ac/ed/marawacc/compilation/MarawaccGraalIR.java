@@ -6,26 +6,29 @@ import com.oracle.graal.nodes.StructuredGraph;
 
 public class MarawaccGraalIR {
 
-    private HashMap<Long, StructuredGraph> compilationTable;
-    private HashMap<Long, Long> callTargetsTable;
-
     public static final MarawaccGraalIR INSTANCE = new MarawaccGraalIR();
+
+    // CallTargetID -> StructuredGraph
+    private HashMap<Long, StructuredGraph> compilationTable;
+
+    // Graph ID -> CallTargetID
+    private HashMap<Long, Long> graphsTable;
 
     private MarawaccGraalIR() {
         compilationTable = new HashMap<>();
-        callTargetsTable = new HashMap<>();
+        graphsTable = new HashMap<>();
     }
 
     public void insertCallTargetID(StructuredGraph graph, long idCallTarget) {
-        callTargetsTable.put(graph.graphId(), idCallTarget);
+        graphsTable.put(graph.graphId(), idCallTarget);
     }
 
     public boolean isCompiledGraph(long graphID) {
-        return callTargetsTable.containsKey(graphID);
+        return graphsTable.containsKey(graphID);
     }
 
     public void updateGraph(StructuredGraph graph) {
-        Long idCallTarget = callTargetsTable.get(graph.graphId());
+        Long idCallTarget = graphsTable.get(graph.graphId());
         if (idCallTarget != null) {
             compilationTable.put(idCallTarget, graph);
         } else {
@@ -34,7 +37,16 @@ public class MarawaccGraalIR {
     }
 
     public StructuredGraph getCompiledGraph(StructuredGraph graph) {
-        Long idCallTarget = callTargetsTable.get(graph.graphId());
+        Long idCallTarget = graphsTable.get(graph.graphId());
         return compilationTable.get(idCallTarget);
+    }
+
+    public StructuredGraph getCompiledGraph(long callTargetID) {
+        return compilationTable.get(callTargetID);
+    }
+
+    public void clean() {
+        compilationTable.clear();
+        graphsTable.clear();
     }
 }
