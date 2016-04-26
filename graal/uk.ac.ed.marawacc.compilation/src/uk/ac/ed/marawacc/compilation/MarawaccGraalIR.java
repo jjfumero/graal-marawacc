@@ -1,32 +1,29 @@
 package uk.ac.ed.marawacc.compilation;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Map;
 
 import com.oracle.graal.nodes.StructuredGraph;
 
 public class MarawaccGraalIR {
 
-    private static MarawaccGraalIR INSTANCE;
-
-    // CallTargetID -> StructuredGraph
-    private Map<Long, StructuredGraph> compilationTable;
+    private static MarawaccGraalIR _instance;
 
     // Graph ID -> CallTargetID
-    private Map<Long, Long> graphsTable;
+    private HashMap<Long, Long> graphsTable;
+
+    // CallTargetID -> StructuredGraph
+    private HashMap<Long, StructuredGraph> compilationTable;
 
     public static MarawaccGraalIR getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new MarawaccGraalIR();
+        if (_instance == null) {
+            _instance = new MarawaccGraalIR();
         }
-        return INSTANCE;
+        return _instance;
     }
 
     private MarawaccGraalIR() {
-        compilationTable = Collections.synchronizedMap(new HashMap<Long, StructuredGraph>());
-        graphsTable = Collections.synchronizedMap(new HashMap<Long, Long>());
+        compilationTable = new HashMap<>();
+        graphsTable = new HashMap<>();
     }
 
     public void insertCallTargetID(StructuredGraph graph, long idCallTarget) {
@@ -37,16 +34,14 @@ public class MarawaccGraalIR {
         return graphsTable.containsKey(graphID);
     }
 
-    public void updateGraph(StructuredGraph graph) {
-        System.out.println("INSERTING GRAPH INTO THE COMPILATION TABLE: " + graph);
+    public boolean updateGraph(StructuredGraph graph) {
         Long idCallTarget = graphsTable.get(graph.graphId());
-        if (idCallTarget != null) {
-            System.out.println("\n\t >> INSERTING: " + idCallTarget + " -- " + graph.graphId());
-            compilationTable.put(idCallTarget, graph);
-            System.out.println(compilationTable);
-        } else {
-            throw new RuntimeException("Update graph not valid");
+        if (idCallTarget != null && !compilationTable.containsKey(idCallTarget)) {
+            System.out.println(" >>>>>>> Inserting graph into compilationTable");
+            compilationTable.put(idCallTarget, (StructuredGraph) graph.copy());
+            return true;
         }
+        return false;
     }
 
     public StructuredGraph getCompiledGraph(StructuredGraph graph) {
@@ -58,16 +53,10 @@ public class MarawaccGraalIR {
     }
 
     public StructuredGraph getCompiledGraph(long idCallTarget) {
-        System.out.println(compilationTable.get(idCallTarget));
         if (compilationTable.containsKey(idCallTarget)) {
             return compilationTable.get(idCallTarget);
         } else {
             return null;
         }
-    }
-
-    public void clean() {
-        compilationTable.clear();
-        graphsTable.clear();
     }
 }

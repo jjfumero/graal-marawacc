@@ -53,15 +53,14 @@ public class RemoveValueProxyPhase extends Phase {
         graph.setHasValueProxies(false);
 
         if (MarawaccGraalIR.getInstance().isCompiledGraph(graph.graphId())) {
-            System.out.println("COMPILING FOR GPU!!! ");
-            MarawaccGraalIR.getInstance().updateGraph(graph);
+            boolean updateGraph = MarawaccGraalIR.getInstance().updateGraph(graph);
 
-            StructuredGraph compiledGraph = MarawaccGraalIR.getInstance().getCompiledGraph(graph);
-            System.out.println(" -------------- ");
-            System.out.println(" >> " + compiledGraph);
-            System.out.println(" -------------- ");
-
+            if (updateGraph) {
+                StructuredGraph compiledGraph = MarawaccGraalIR.getInstance().getCompiledGraph(graph);
+                System.out.println(" -------------- ");
+                System.out.println(" >> " + compiledGraph);
+                System.out.println(" -------------- ");
+            }
         }
-
     }
 }
