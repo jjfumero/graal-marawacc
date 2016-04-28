@@ -26,8 +26,8 @@ public class MarawaccGraalIR {
         graphsTable = new HashMap<>();
     }
 
-    public void insertCallTargetID(StructuredGraph graph, long idCallTarget) {
-        graphsTable.put(graph.graphId(), idCallTarget);
+    public void insertCallTargetID(long idGraph, long idCallTarget) {
+        graphsTable.put(idGraph, idCallTarget);
     }
 
     public boolean isCompiledGraph(long graphID) {
@@ -38,18 +38,10 @@ public class MarawaccGraalIR {
         Long idCallTarget = graphsTable.get(graph.graphId());
         if (idCallTarget != null && !compilationTable.containsKey(idCallTarget)) {
             System.out.println(" >>>>>>> Inserting graph into compilationTable");
-            compilationTable.put(idCallTarget, (StructuredGraph) graph.copy());
+            compilationTable.put(idCallTarget, graph);
             return true;
         }
         return false;
-    }
-
-    public StructuredGraph getCompiledGraph(StructuredGraph graph) {
-        Long idCallTarget = graphsTable.get(graph.graphId());
-        if (idCallTarget != null) {
-            return getCompiledGraph(idCallTarget);
-        }
-        return null;
     }
 
     public StructuredGraph getCompiledGraph(long idCallTarget) {
@@ -59,4 +51,11 @@ public class MarawaccGraalIR {
             return null;
         }
     }
+
+    public void printInfo() {
+        System.out.println("PRINT INFO");
+        System.out.println(graphsTable);
+        System.out.println(compilationTable);
+    }
+
 }

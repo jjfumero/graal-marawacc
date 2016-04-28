@@ -26,6 +26,11 @@ import static com.oracle.graal.compiler.GraalCompiler.compileGraph;
 import static com.oracle.graal.compiler.GraalCompiler.getProfilingInfo;
 import static jdk.vm.ci.code.CodeUtil.getCallingConvention;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -57,7 +62,6 @@ import com.oracle.graal.graphbuilderconf.GraphBuilderConfiguration;
 import com.oracle.graal.graphbuilderconf.GraphBuilderConfiguration.Plugins;
 import com.oracle.graal.lir.asm.CompilationResultBuilderFactory;
 import com.oracle.graal.lir.phases.LIRSuites;
-import com.oracle.graal.nodes.ParameterNode;
 import com.oracle.graal.nodes.StructuredGraph;
 import com.oracle.graal.nodes.StructuredGraph.AllowAssumptions;
 import com.oracle.graal.phases.OptimisticOptimizations;
@@ -186,7 +190,7 @@ public abstract class TruffleCompiler {
             }
 
             if (compilable.getIDForGPU() != -1) {
-                MarawaccGraalIR.getInstance().insertCallTargetID(graph, compilable.getIDForGPU());
+                MarawaccGraalIR.getInstance().insertCallTargetID(graph.graphId(), compilable.getIDForGPU());
             }
 
             if (Thread.currentThread().isInterrupted()) {
