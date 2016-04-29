@@ -38,7 +38,7 @@ public class MarawaccGraalIR {
         Long idCallTarget = graphsTable.get(graph.graphId());
         if (idCallTarget != null && !compilationTable.containsKey(idCallTarget)) {
             System.out.println(" >>>>>>> Inserting graph into compilationTable");
-            compilationTable.put(idCallTarget, graph);
+            compilationTable.put(idCallTarget, (StructuredGraph) graph.copy());
             return true;
         }
         return false;
