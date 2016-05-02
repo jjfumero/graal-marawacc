@@ -34,6 +34,14 @@ public class MarawaccGraalIR {
         return graphsTable.containsKey(graphID);
     }
 
+    public boolean isInCompilationTable(long graphID) {
+        Long idCallTarget = graphsTable.get(graphID);
+        if (idCallTarget != null && !compilationTable.containsKey(idCallTarget)) {
+            return false;
+        }
+        return true;
+    }
+
     public boolean updateGraph(StructuredGraph graph) {
         Long idCallTarget = graphsTable.get(graph.graphId());
         if (idCallTarget != null && !compilationTable.containsKey(idCallTarget)) {
