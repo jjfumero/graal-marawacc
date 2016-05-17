@@ -319,6 +319,7 @@ public class OptimizedCallTarget extends InstalledCode implements RootCallTarget
         return callRoot(args);
     }
 
+    @TruffleCallBoundary
     public final Object callRoot(Object[] originalArguments) {
         Object[] args = originalArguments;
         if (this.profiledArgumentTypesAssumption != null && CompilerDirectives.inCompiledCode() && profiledArgumentTypesAssumption.isValid()) {

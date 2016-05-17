@@ -26,27 +26,25 @@ import static com.oracle.graal.compiler.GraalCompiler.compileGraph;
 import static com.oracle.graal.compiler.GraalCompiler.getProfilingInfo;
 import static jdk.vm.ci.code.CodeUtil.getCallingConvention;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import uk.ac.ed.marawacc.compilation.MarawaccGraalIR;
 import jdk.vm.ci.code.CallingConvention;
 import jdk.vm.ci.code.CallingConvention.Type;
 import jdk.vm.ci.code.CodeCacheProvider;
 import jdk.vm.ci.code.CompilationResult;
 import jdk.vm.ci.code.InstalledCode;
+import jdk.vm.ci.code.InvalidInstalledCodeException;
 import jdk.vm.ci.meta.Assumptions.Assumption;
 import jdk.vm.ci.meta.ConstantReflectionProvider;
 import jdk.vm.ci.meta.MetaAccessProvider;
+import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.SpeculationLog;
+import uk.ac.ed.marawacc.compilation.MarawaccGraalIR;
+import uk.ac.ed.marawacc.graal.JITGraalCompilerUtil;
 
 import com.oracle.graal.api.replacements.SnippetReflectionProvider;
 import com.oracle.graal.compiler.target.Backend;
@@ -190,6 +188,19 @@ public abstract class TruffleCompiler {
             }
 
             if (compilable.getIDForGPU() != -1) {
+// // ===================================================================
+// // Just to check the binary
+// JITGraalCompilerUtil compiler = new JITGraalCompilerUtil();
+// ResolvedJavaMethod resolvedJavaMethod = graph.method();
+// InstalledCode code = compiler.compile(resolvedJavaMethod);
+// try {
+// Object args = code.executeVarargs(compilable, new Object[]{0, 1, 2, 3, 4, 5, 6, false});
+// } catch (InvalidInstalledCodeException e) {
+// e.printStackTrace();
+// }
+// // ===================================================================
+
+                System.out.println("[ASTX] Inserting GRAPH for GPU Compilation Queue");
                 MarawaccGraalIR.getInstance().insertCallTargetID(graph.graphId(), compilable.getIDForGPU());
             }
 

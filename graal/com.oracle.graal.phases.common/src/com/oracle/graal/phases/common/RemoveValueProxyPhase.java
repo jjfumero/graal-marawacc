@@ -52,8 +52,10 @@ public class RemoveValueProxyPhase extends Phase {
         }
         graph.setHasValueProxies(false);
 
-        if (MarawaccGraalIR.getInstance().isCompiledGraph(graph.graphId())
-                        && (!MarawaccGraalIR.getInstance().isInCompilationTable(graph.graphId()))) {
+        // if (MarawaccGraalIR.getInstance().isCompiledGraph(graph.graphId()) &&
+        // (!MarawaccGraalIR.getInstance().isInCompilationTable(graph.graphId()))) {
+        if (MarawaccGraalIR.getInstance().isCompiledGraph(graph.graphId())) {
+            System.out.println("[ASTX] REMOVE VALUE PROXY PHASE: UPDATING GRAPH");
             MarawaccGraalIR.getInstance().updateGraph(graph);
         }
     }

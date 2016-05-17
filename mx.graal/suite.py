@@ -885,7 +885,8 @@ suite = {
         "com.oracle.graal.api.runtime",
         "com.oracle.graal.runtime",
         "com.oracle.graal.replacements",
-		"com.oracle.graal.printer",
+	"com.oracle.graal.printer",
+	"uk.ac.ed.marawacc.graal",
       ],
       "checkstyle" : "com.oracle.graal.graph",
       "annotationProcessors" : deps([
@@ -963,7 +964,7 @@ suite = {
       "workingSets" : "Graal,Truffle,SPARC",
     },
 
-	# New Graal-Truffle-GPU package for GPU compilation
+    # New Graal-Truffle-GPU package for GPU compilation
     "uk.ac.ed.marawacc.compilation" : {
       "subDir" : "graal",
       "sourceDirs" : ["src"],
@@ -974,6 +975,23 @@ suite = {
       "javaCompliance" : "1.8",
       "workingSets" : "Graal,Truffle",
     },
+
+    "uk.ac.ed.marawacc.graal" : {
+      "subDir" : "graal",
+      "sourceDirs" : ["src"],
+      "dependencies" : [
+        "com.oracle.graal.compiler",
+        "com.oracle.graal.runtime",
+        "jvmci:JVMCI_HOTSPOT",
+        "com.oracle.graal.java",
+        "com.oracle.graal.printer",
+        "com.oracle.graal.api.runtime",
+      ],
+      "checkstyle" : "com.oracle.graal.graph",
+      "javaCompliance" : "1.8",
+      "workingSets" : "Graal,Truffle",
+    },
+
 
     # ------------- Salver -------------
 
