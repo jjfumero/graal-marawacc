@@ -147,10 +147,20 @@ public interface CompilationUtils {
      * @param graph
      * @param name
      */
-    default void saveGraph(StructuredGraph graph, String name) {
+    static void saveGraph(StructuredGraph graph, String name) {
         GraalOptions.PrintIdealGraphFile.setValue(true);
         GraphPrinterDumpHandler printer = new GraphPrinterDumpHandler();
         printer.dump(graph, name);
         printer.close();
+    }
+
+    /**
+     * Save the GraalIR into a file. It is useful to print it with IGV.
+     *
+     * @param graph
+     * @param name
+     */
+    static void dumpGraph(StructuredGraph graph, String name) {
+        saveGraph(graph, name);
     }
 }
