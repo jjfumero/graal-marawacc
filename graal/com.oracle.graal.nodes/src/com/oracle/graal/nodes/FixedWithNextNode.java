@@ -52,5 +52,6 @@ public abstract class FixedWithNextNode extends FixedNode {
     @Override
     public FixedWithNextNode asNode() {
         return this;
+
     }
 }

@@ -155,7 +155,7 @@ public abstract class TruffleCompiler {
         if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
             GraphPrinterDumpHandler printer = new GraphPrinterDumpHandler();
             DebugScope.forceDump(graph, "afterPartialEvaluator");
-            printer.dump(graph, "graphToCompile");
+            printer.dump(graph, "afterPartialEvaluator");
             printer.close();
 
             if (TruffleCompilerOptions.TrufflePrintIRToGPU.getValue()) {
