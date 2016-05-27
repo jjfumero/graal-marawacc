@@ -30,7 +30,6 @@ import jdk.vm.ci.hotspot.HotSpotMetaAccessProvider;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 import com.oracle.graal.compiler.common.GraalOptions;
-import com.oracle.graal.debug.internal.DebugScope;
 import com.oracle.graal.graph.Node;
 import com.oracle.graal.graph.iterators.NodeIterable;
 import com.oracle.graal.java.BytecodeDisassembler;
