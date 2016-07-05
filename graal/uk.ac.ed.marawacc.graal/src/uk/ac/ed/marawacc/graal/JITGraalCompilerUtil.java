@@ -55,7 +55,7 @@ import com.oracle.graal.runtime.RuntimeProvider;
  * compilation is done via GRAAL.
  *
  */
-public final class JITGraalCompilerUtil implements CompilationUtils {
+public final class JITGraalCompilerUtil implements CompilerUtils {
 
     // Keep the cache per JITMethodCompiler object
     private final CodeCacheProvider codeCache;

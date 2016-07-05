@@ -44,7 +44,7 @@ import com.oracle.graal.printer.GraphPrinterDumpHandler;
  * Graal compile and Java reflection utilities.
  *
  */
-public interface CompilationUtils {
+public interface CompilerUtils {
 
     /**
      * Find a method given the class and the string.
