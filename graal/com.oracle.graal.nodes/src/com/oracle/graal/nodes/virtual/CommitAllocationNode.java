@@ -24,6 +24,7 @@ package com.oracle.graal.nodes.virtual;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -106,6 +107,37 @@ public final class CommitAllocationNode extends FixedWithNextNode implements Vir
     public void addLocks(List<MonitorIdNode> monitorIds) {
         locks.addAll(monitorIds);
         lockIndexes.add(locks.size());
+    }
+
+    /**
+     * For debug purposes, print content of each array in values lists.
+     */
+    public void content() {
+        int pos = 0;
+        for (int i = 0; i < virtualObjects.size(); i++) {
+            VirtualObjectNode virtualObject = virtualObjects.get(i);
+            int entryCount = virtualObject.entryCount();
+            ValueNode[] array = values.subList(pos, pos + entryCount).toArray(new ValueNode[entryCount]);
+            System.out.println("[CONTENT] " + virtualObject);
+            System.out.println("[CONTENT] " + Arrays.toString(array));
+            pos += entryCount;
+        }
+    }
+
+    /**
+     * For debug purposes, print content of each array in values lists.
+     */
+    public HashMap<VirtualObjectNode, Object[]> getValuesArrays() {
+        HashMap<VirtualObjectNode, Object[]> arrayValues = new HashMap<>();
+        int pos = 0;
+        for (int i = 0; i < virtualObjects.size(); i++) {
+            VirtualObjectNode virtualObject = virtualObjects.get(i);
+            int entryCount = virtualObject.entryCount();
+            ValueNode[] array = values.subList(pos, pos + entryCount).toArray(new ValueNode[entryCount]);
+            arrayValues.put(virtualObject, array);
+            pos += entryCount;
+        }
+        return arrayValues;
     }
 
     @Override
