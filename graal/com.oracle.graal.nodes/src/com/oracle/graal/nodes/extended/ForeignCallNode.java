@@ -88,6 +88,10 @@ public class ForeignCallNode extends AbstractMemoryCheckpoint implements LIRLowe
         assert descriptor.getArgumentTypes().length == this.arguments.size() : "wrong number of arguments to " + this;
     }
 
+    public NodeInputList<ValueNode> getArguments() {
+        return arguments;
+    }
+
     @Override
     public boolean hasSideEffect() {
         return !foreignCalls.isReexecutable(descriptor);
