@@ -56,7 +56,7 @@ import com.oracle.graal.nodes.spi.NodeLIRBuilderTool;
  * The {@code ConstantNode} represents a {@link Constant constant}.
  */
 @NodeInfo(nameTemplate = "C({p#rawvalue})")
-public final class ConstantNode extends FloatingNode implements LIRLowerable {
+public final class ConstantNode extends FloatingNode implements LIRLowerable, Comparable<ConstantNode> {
 
     public static final NodeClass<ConstantNode> TYPE = NodeClass.create(ConstantNode.class);
 
@@ -497,5 +497,14 @@ public final class ConstantNode extends FloatingNode implements LIRLowerable {
         } else {
             return super.toString(verbosity);
         }
+    }
+
+    public int compareTo(ConstantNode o) {
+        if (this.getId() == o.getId()) {
+            return 0;
+        } else if (this.getId() < o.getId()) {
+            return -1;
+        }
+        return 1;
     }
 }
