@@ -53,7 +53,6 @@ public class MarawaccGraalIR {
     public boolean updateGraph(StructuredGraph graph) {
         Long idCallTarget = graphsTable.get(graph.graphId());
         if (idCallTarget != null && !compilationTable.containsKey(idCallTarget)) {
-            System.out.println("[ASTX] UPDATING THE GRAPH");
             compilationTable.put(idCallTarget, (StructuredGraph) graph.copy());
             counter++;
             return true;

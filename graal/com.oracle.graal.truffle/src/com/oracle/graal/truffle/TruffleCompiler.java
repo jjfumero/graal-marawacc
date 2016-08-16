@@ -181,7 +181,9 @@ public abstract class TruffleCompiler {
 
             try (DebugCloseable a = PartialEvaluationTime.start(); DebugCloseable c = PartialEvaluationMemUse.start()) {
                 graph = partialEvaluator.createGraph(compilable, AllowAssumptions.YES);
-                debugGraphToGPU(graph);
+                if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
+                    debugGraphToGPU(graph);
+                }
             }
 
             if (compilable.getIDForGPU() != -1) {
