@@ -184,7 +184,7 @@ public class TruffleCompilerOptions {
     public static final OptionValue<Boolean> TruffleIterativePartialEscape = new OptionValue<>(false);
 
     @Option(help = "Trace GraalIR for GPU.", type = OptionType.Debug)
-    public static final OptionValue<Boolean> TruffleTraceIRToGPU = new OptionValue<>(true);
+    public static final OptionValue<Boolean> TruffleTraceIRToGPU = new OptionValue<>(false);
 
     @Option(help = "Print GraalIR for the GPU.", type = OptionType.Debug)
     public static final OptionValue<Boolean> TrufflePrintIRToGPU = new OptionValue<>(false);

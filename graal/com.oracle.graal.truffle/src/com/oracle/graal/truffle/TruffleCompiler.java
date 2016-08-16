@@ -185,19 +185,9 @@ public abstract class TruffleCompiler {
             }
 
             if (compilable.getIDForGPU() != -1) {
-// // ===================================================================
-// // Just to check the binary
-// JITGraalCompilerUtil compiler = new JITGraalCompilerUtil();
-// ResolvedJavaMethod resolvedJavaMethod = graph.method();
-// InstalledCode code = compiler.compile(resolvedJavaMethod);
-// try {
-// Object args = code.executeVarargs(compilable, new Object[]{0, 1, 2, 3, 4, 5, 6, false});
-// } catch (InvalidInstalledCodeException e) {
-// e.printStackTrace();
-// }
-// // ===================================================================
-
-                System.out.println("[ASTX] Inserting GRAPH for GPU Compilation Queue");
+                if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
+                    System.out.println("[ASTX] Inserting GRAPH for GPU Compilation Queue");
+                }
                 MarawaccGraalIR.getInstance().insertCallTargetID(graph.graphId(), compilable.getIDForGPU());
             }
 
