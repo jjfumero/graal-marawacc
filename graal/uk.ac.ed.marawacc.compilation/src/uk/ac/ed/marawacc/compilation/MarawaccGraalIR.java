@@ -60,7 +60,7 @@ public class MarawaccGraalIR {
         return false;
     }
 
-    public StructuredGraph getCompiledGraph(long idCallTarget) {
+    public synchronized StructuredGraph getCompiledGraph(long idCallTarget) {
         if (compilationTable.containsKey(idCallTarget)) {
             return compilationTable.get(idCallTarget);
         } else {
