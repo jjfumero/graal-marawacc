@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import uk.ac.ed.marawacc.graal.GraalOCLBackendConnector;
 import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.common.JVMCIError;
 import jdk.vm.ci.meta.JavaConstant;
@@ -62,10 +63,14 @@ import com.oracle.graal.graphbuilderconf.ParameterPlugin;
 import com.oracle.graal.java.ComputeLoopFrequenciesClosure;
 import com.oracle.graal.java.GraphBuilderPhase;
 import com.oracle.graal.nodes.ConstantNode;
+import com.oracle.graal.nodes.FixedGuardNode;
+import com.oracle.graal.nodes.IfNode;
+import com.oracle.graal.nodes.LogicNode;
 import com.oracle.graal.nodes.StructuredGraph;
 import com.oracle.graal.nodes.StructuredGraph.AllowAssumptions;
 import com.oracle.graal.nodes.ValueNode;
 import com.oracle.graal.nodes.calc.FloatingNode;
+import com.oracle.graal.nodes.calc.IsNullNode;
 import com.oracle.graal.nodes.java.CheckCastNode;
 import com.oracle.graal.nodes.java.InstanceOfNode;
 import com.oracle.graal.nodes.java.LoadFieldNode;
@@ -76,6 +81,7 @@ import com.oracle.graal.phases.OptimisticOptimizations;
 import com.oracle.graal.phases.PhaseSuite;
 import com.oracle.graal.phases.common.CanonicalizerPhase;
 import com.oracle.graal.phases.common.ConvertDeoptimizeToGuardPhase;
+import com.oracle.graal.phases.common.DeadCodeEliminationPhase;
 import com.oracle.graal.phases.common.DominatorConditionalEliminationPhase;
 import com.oracle.graal.phases.common.inlining.InliningUtil;
 import com.oracle.graal.phases.tiers.HighTierContext;
@@ -474,6 +480,11 @@ public class PartialEvaluator {
         }
         Debug.dump(graph, "After FastPE");
 
+        graph.maybeCompress();
+
+        // Perform deoptimize to guard conversion.
+        new ConvertDeoptimizeToGuardPhase().apply(graph, tierContext);
+
         if (isOpeNCL()) {
             // Analyse OpenCL annotations
             for (Node node : graph.getNodes()) {
@@ -482,19 +493,28 @@ public class PartialEvaluator {
                     ResolvedJavaField field = fieldNode.field();
                     if (field.getAnnotation(OpenCLInstanceOf.class) != null) {
                         System.out.println("FiledNode OpenCL dependency");
-                        Node first = fieldNode.successors().first();
-                        if (first instanceof InstanceOfNode) {
-                            first.safeDelete();
+
+                        Node n = fieldNode.successors().first();
+                        boolean found = false;
+                        while (!found) {
+                            n = n.successors().first();
+                            if (n instanceof FixedGuardNode) {
+                                FixedGuardNode fixed = (FixedGuardNode) n;
+                                LogicNode condition = fixed.condition();
+
+                                if (condition instanceof InstanceOfNode) {
+                                    condition.markDeleted();
+// condition.replaceAtUsages(null);
+// condition.safeDelete();
+                                    found = false;
+                                    System.out.println("Deleted");
+                                }
+                            }
                         }
                     }
                 }
             }
         }
-
-        graph.maybeCompress();
-
-        // Perform deoptimize to guard conversion.
-        new ConvertDeoptimizeToGuardPhase().apply(graph, tierContext);
 
         for (MethodCallTargetNode methodCallTargetNode : graph.getNodes(MethodCallTargetNode.TYPE)) {
             StructuredGraph inlineGraph = providers.getReplacements().getSubstitution(methodCallTargetNode.targetMethod(), methodCallTargetNode.invoke().bci());
