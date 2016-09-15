@@ -43,6 +43,21 @@ public final class ParameterNode extends AbstractLocalNode implements IterableNo
         super(TYPE, index, stamp);
     }
 
+    public JavaType type() {
+        ResolvedJavaMethod method = graph().method();
+        if (method != null) {
+            JavaType parameterType;
+            if (method.isStatic() || index() > 0) {
+                int signatureIndex = method.isStatic() ? index() : index() - 1;
+                parameterType = method.getSignature().getParameterType(signatureIndex, method.getDeclaringClass());
+            } else {
+                parameterType = method.getDeclaringClass();
+            }
+            return parameterType;
+        }
+        return null;
+    }
+
     public Stamp uncheckedStamp() {
         ResolvedJavaMethod method = graph().method();
         if (method != null) {

@@ -308,7 +308,7 @@ public class OptimizedCallTarget extends InstalledCode implements RootCallTarget
     }
 
     @TruffleCallBoundary
-    protected final Object callBoundary(Object[] args) {
+    protected final Object callBoundary(@OpenCLInstanceOf Object[] args) {
         if (CompilerDirectives.inInterpreter()) {
             // We are called and we are still in Truffle interpreter mode.
             interpreterCall();
