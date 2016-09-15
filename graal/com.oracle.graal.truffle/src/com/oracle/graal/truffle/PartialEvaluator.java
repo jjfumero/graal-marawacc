@@ -38,6 +38,7 @@ import jdk.vm.ci.common.JVMCIError;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
+import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.options.Option;
@@ -50,6 +51,7 @@ import com.oracle.graal.compiler.common.type.Stamp;
 import com.oracle.graal.debug.Debug;
 import com.oracle.graal.debug.Debug.Scope;
 import com.oracle.graal.debug.Indent;
+import com.oracle.graal.graph.Node;
 import com.oracle.graal.graphbuilderconf.GraphBuilderConfiguration;
 import com.oracle.graal.graphbuilderconf.GraphBuilderConfiguration.Plugins;
 import com.oracle.graal.graphbuilderconf.GraphBuilderContext;
@@ -66,6 +68,7 @@ import com.oracle.graal.nodes.ValueNode;
 import com.oracle.graal.nodes.calc.FloatingNode;
 import com.oracle.graal.nodes.java.CheckCastNode;
 import com.oracle.graal.nodes.java.InstanceOfNode;
+import com.oracle.graal.nodes.java.LoadFieldNode;
 import com.oracle.graal.nodes.java.MethodCallTargetNode;
 import com.oracle.graal.nodes.virtual.VirtualInstanceNode;
 import com.oracle.graal.nodes.virtual.VirtualObjectNode;
@@ -93,6 +96,7 @@ import com.oracle.graal.truffle.substitutions.TruffleGraphBuilderPlugins;
 import com.oracle.graal.truffle.substitutions.TruffleInvocationPluginProvider;
 import com.oracle.graal.virtual.phases.ea.PartialEscapePhase;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.OpenCLInstanceOf;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
@@ -115,6 +119,7 @@ public class PartialEvaluator {
     private final GraphBuilderConfiguration configForPartialEvaluation;
     private final GraphBuilderConfiguration configForParsing;
     private final InvocationPlugins decodingInvocationPlugins;
+    private boolean isOpeNCL = false;
 
     public PartialEvaluator(Providers providers, GraphBuilderConfiguration configForRoot, SnippetReflectionProvider snippetReflection, Architecture architecture) {
         this.providers = providers;
@@ -163,6 +168,40 @@ public class PartialEvaluator {
         } catch (Throwable e) {
             throw Debug.handle(e);
         }
+
+        final StructuredGraph graph = new StructuredGraph(callTarget.toString(), callRootMethod, allowAssumptions, callTarget.getSpeculationLog());
+        assert graph != null : "no graph for root method";
+
+        try (Scope s = Debug.scope("CreateGraph", graph); Indent indent = Debug.logAndIndent("createGraph %s", graph)) {
+
+            PhaseContext baseContext = new PhaseContext(providers);
+            HighTierContext tierContext = new HighTierContext(providers, new PhaseSuite<HighTierContext>(), OptimisticOptimizations.NONE);
+
+            fastPartialEvaluation(callTarget, graph, baseContext, tierContext);
+
+            if (Thread.currentThread().isInterrupted()) {
+                return null;
+            }
+
+            new VerifyFrameDoesNotEscapePhase().apply(graph, false);
+            postPartialEvaluation(graph);
+
+        } catch (Throwable e) {
+            throw Debug.handle(e);
+        }
+
+        return graph;
+    }
+
+    @SuppressWarnings("try")
+    public StructuredGraph createGraph(final OptimizedCallTarget callTarget, AllowAssumptions allowAssumptions, boolean openCL) {
+        try (Scope c = Debug.scope("TruffleTree")) {
+            Debug.dump(callTarget, callTarget.toString());
+        } catch (Throwable e) {
+            throw Debug.handle(e);
+        }
+
+        isOpeNCL = openCL;
 
         final StructuredGraph graph = new StructuredGraph(callTarget.toString(), callRootMethod, allowAssumptions, callTarget.getSpeculationLog());
         assert graph != null : "no graph for root method";
@@ -435,6 +474,23 @@ public class PartialEvaluator {
         }
         Debug.dump(graph, "After FastPE");
 
+        if (isOpeNCL()) {
+            // Analyse OpenCL annotations
+            for (Node node : graph.getNodes()) {
+                if (node instanceof LoadFieldNode) {
+                    LoadFieldNode fieldNode = (LoadFieldNode) node;
+                    ResolvedJavaField field = fieldNode.field();
+                    if (field.getAnnotation(OpenCLInstanceOf.class) != null) {
+                        System.out.println("FiledNode OpenCL dependency");
+                        Node first = fieldNode.successors().first();
+                        if (first instanceof InstanceOfNode) {
+                            first.safeDelete();
+                        }
+                    }
+                }
+            }
+        }
+
         graph.maybeCompress();
 
         // Perform deoptimize to guard conversion.
@@ -467,6 +523,10 @@ public class PartialEvaluator {
         if (TruffleCompilerOptions.TraceTrufflePerformanceWarnings.getValue()) {
             reportPerformanceWarnings(callTarget, graph);
         }
+    }
+
+    private boolean isOpeNCL() {
+        return isOpeNCL;
     }
 
     @SuppressWarnings("try")

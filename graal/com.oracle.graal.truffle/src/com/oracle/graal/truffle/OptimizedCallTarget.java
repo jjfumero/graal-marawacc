@@ -116,13 +116,13 @@ public class OptimizedCallTarget extends InstalledCode implements RootCallTarget
         return rootNode;
     }
 
-    public void generateIDForGPU() {
+    public void generateIDForOpenCL() {
         if (this.targetID == -1) {
             targetID = (new Random()).nextLong();
         }
     }
 
-    public long getIDForGPU() {
+    public long getIDForOpenCL() {
         return targetID;
     }
 

@@ -180,17 +180,21 @@ public abstract class TruffleCompiler {
             PhaseSuite<HighTierContext> graphBuilderSuite = createGraphBuilderSuite();
 
             try (DebugCloseable a = PartialEvaluationTime.start(); DebugCloseable c = PartialEvaluationMemUse.start()) {
-                graph = partialEvaluator.createGraph(compilable, AllowAssumptions.YES);
+                if (compilable.getIDForOpenCL() == -1) {
+                    graph = partialEvaluator.createGraph(compilable, AllowAssumptions.YES);
+                } else {
+                    graph = partialEvaluator.createGraph(compilable, AllowAssumptions.YES, true);
+                }
                 if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
                     debugGraphToGPU(graph);
                 }
             }
 
-            if (compilable.getIDForGPU() != -1) {
+            if (compilable.getIDForOpenCL() != -1) {
                 if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
                     System.out.println("[ASTX] Inserting GRAPH for GPU Compilation Queue");
                 }
-                MarawaccGraalIR.getInstance().insertCallTargetID(graph.graphId(), compilable.getIDForGPU());
+                MarawaccGraalIR.getInstance().insertCallTargetID(graph.graphId(), compilable.getIDForOpenCL());
             }
 
             if (Thread.currentThread().isInterrupted()) {
