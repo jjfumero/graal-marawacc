@@ -29,6 +29,7 @@ import sun.misc.Unsafe;
 
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.OpenCLInstanceOf;
+import com.oracle.truffle.api.CompilerDirectives.OpenCLScope;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
@@ -44,7 +45,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public final class FrameWithoutBoxing implements VirtualFrame, MaterializedFrame {
     private final FrameDescriptor descriptor;
     @OpenCLInstanceOf private final Object[] arguments;
-    private Object[] locals;
+    @OpenCLScope private Object[] locals;
     private long[] primitiveLocals;
     private byte[] tags;
     public static final byte OBJECT_TAG = 0;

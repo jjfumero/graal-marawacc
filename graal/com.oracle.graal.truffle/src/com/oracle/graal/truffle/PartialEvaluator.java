@@ -102,6 +102,7 @@ import com.oracle.graal.truffle.substitutions.TruffleInvocationPluginProvider;
 import com.oracle.graal.virtual.phases.ea.PartialEscapePhase;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.OpenCLInstanceOf;
+import com.oracle.truffle.api.CompilerDirectives.OpenCLScope;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
@@ -501,6 +502,64 @@ public class PartialEvaluator {
         new DeadCodeEliminationPhase().apply(graph);
     }
 
+    private void processOpenCLInstanceOfAnnotation(Node node) {
+        if (node instanceof LoadFieldNode) {
+            LoadFieldNode fieldNode = (LoadFieldNode) node;
+            ResolvedJavaField field = fieldNode.field();
+            if (field.getAnnotation(OpenCLInstanceOf.class) != null) {
+                System.out.println("FiledNode OpenCL dependency: " + fieldNode);
+
+                Node loadIndexed = fieldNode.successors().first();
+
+                System.out.println("Getting successor: " + loadIndexed);
+
+                Node fixedGuard = loadIndexed.successors().first();
+
+                if (fixedGuard instanceof FixedGuardNode) {
+                    FixedGuardNode fixedGuardNode = (FixedGuardNode) fixedGuard;
+                    LogicNode condition = fixedGuardNode.condition();
+
+                    if (condition instanceof InstanceOfNode) {
+                        System.out.println("Deleted node: " + condition);
+                        nodesDeopt.add(fixedGuardNode);
+                        nodesInstancesOf.add(condition);
+                    }
+                } else {
+                    return;
+                }
+            }
+        }
+    }
+
+    private void processOpenCLScope(Node node) {
+        if (node instanceof LoadFieldNode) {
+            LoadFieldNode fieldNode = (LoadFieldNode) node;
+            ResolvedJavaField field = fieldNode.field();
+            if (field.getAnnotation(OpenCLScope.class) != null) {
+                System.out.println("FiledNode OpenCL dependency: " + fieldNode);
+
+                Node loadIndexed = fieldNode.successors().first();
+
+                System.out.println("Getting successor: " + loadIndexed);
+
+                Node fixedGuard = loadIndexed.successors().first();
+
+                if (fixedGuard instanceof FixedGuardNode) {
+                    FixedGuardNode fixedGuardNode = (FixedGuardNode) fixedGuard;
+                    LogicNode condition = fixedGuardNode.condition();
+
+                    if (condition instanceof InstanceOfNode) {
+                        System.out.println("Deleted node: " + condition);
+                        nodesDeopt.add(fixedGuardNode);
+                        nodesInstancesOf.add(condition);
+                    }
+                } else {
+                    return;
+                }
+            }
+        }
+    }
+
     @SuppressWarnings({"try", "unused"})
     private void fastPartialEvaluation(OptimizedCallTarget callTarget, StructuredGraph graph, PhaseContext baseContext, HighTierContext tierContext) {
         if (GraphPE.getValue()) {
@@ -515,40 +574,17 @@ public class PartialEvaluator {
         // Perform deoptimize to guard conversion.
         new ConvertDeoptimizeToGuardPhase().apply(graph, tierContext);
 
+        // Analyse OpenCL annotations
         if (isOpeNCL()) {
-            // Analyse OpenCL annotations
             for (Node node : graph.getNodes()) {
-
-                System.out.println("Processing :   " + node);
-
-                if (node instanceof LoadFieldNode) {
-                    LoadFieldNode fieldNode = (LoadFieldNode) node;
-                    ResolvedJavaField field = fieldNode.field();
-                    if (field.getAnnotation(OpenCLInstanceOf.class) != null) {
-                        System.out.println("FiledNode OpenCL dependency: " + fieldNode);
-
-                        Node loadIndexed = fieldNode.successors().first();
-
-                        System.out.println("Getting successor: " + loadIndexed);
-
-                        Node fixedGuard = loadIndexed.successors().first();
-
-                        if (fixedGuard instanceof FixedGuardNode) {
-                            FixedGuardNode fixedGuardNode = (FixedGuardNode) fixedGuard;
-                            LogicNode condition = fixedGuardNode.condition();
-
-                            if (condition instanceof InstanceOfNode) {
-                                System.out.println("Deleted node: " + condition);
-                                nodesDeopt.add(fixedGuardNode);
-                                nodesInstancesOf.add(condition);
-                            }
-                        } else {
-                            continue;
-                        }
-                        // deadCodeElimination(graph);
-                    }
-                }
+                System.out.println("Processing INSTANCEOF:   " + node);
+                processOpenCLInstanceOfAnnotation(node);
             }
+
+// for (Node node : graph.getNodes()) {
+// System.out.println("Processing SCOPE:   " + node);
+// processOpenCLScope(node);
+// }
         }
 
         System.out.println("End of OpenCL check nodes");
