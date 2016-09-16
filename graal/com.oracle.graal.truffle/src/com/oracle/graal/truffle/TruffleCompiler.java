@@ -190,6 +190,8 @@ public abstract class TruffleCompiler {
                 }
             }
 
+            System.out.println("!!!!!!! Partial Evaluation done");
+
             if (compilable.getIDForOpenCL() != -1) {
                 if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
                     System.out.println("[ASTX] Inserting GRAPH for GPU Compilation Queue");

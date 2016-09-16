@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import uk.ac.ed.marawacc.graal.GraalOCLBackendConnector;
 import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.common.JVMCIError;
 import jdk.vm.ci.meta.JavaConstant;
@@ -46,6 +45,7 @@ import jdk.vm.ci.options.Option;
 import jdk.vm.ci.options.OptionType;
 import jdk.vm.ci.options.OptionValue;
 import jdk.vm.ci.service.Services;
+import uk.ac.ed.marawacc.graal.GraalOCLBackendConnector;
 
 import com.oracle.graal.api.replacements.SnippetReflectionProvider;
 import com.oracle.graal.compiler.common.type.Stamp;
@@ -64,13 +64,12 @@ import com.oracle.graal.java.ComputeLoopFrequenciesClosure;
 import com.oracle.graal.java.GraphBuilderPhase;
 import com.oracle.graal.nodes.ConstantNode;
 import com.oracle.graal.nodes.FixedGuardNode;
-import com.oracle.graal.nodes.IfNode;
+import com.oracle.graal.nodes.FixedWithNextNode;
 import com.oracle.graal.nodes.LogicNode;
 import com.oracle.graal.nodes.StructuredGraph;
 import com.oracle.graal.nodes.StructuredGraph.AllowAssumptions;
 import com.oracle.graal.nodes.ValueNode;
 import com.oracle.graal.nodes.calc.FloatingNode;
-import com.oracle.graal.nodes.calc.IsNullNode;
 import com.oracle.graal.nodes.java.CheckCastNode;
 import com.oracle.graal.nodes.java.InstanceOfNode;
 import com.oracle.graal.nodes.java.LoadFieldNode;
@@ -127,6 +126,9 @@ public class PartialEvaluator {
     private final InvocationPlugins decodingInvocationPlugins;
     private boolean isOpeNCL = false;
 
+    private ArrayList<Node> nodesInstancesOf;
+    private ArrayList<Node> nodesDeopt;
+
     public PartialEvaluator(Providers providers, GraphBuilderConfiguration configForRoot, SnippetReflectionProvider snippetReflection, Architecture architecture) {
         this.providers = providers;
         this.architecture = architecture;
@@ -135,6 +137,8 @@ public class PartialEvaluator {
         this.callDirectMethod = providers.getMetaAccess().lookupJavaMethod(OptimizedCallTarget.getCallDirectMethod());
         this.callInlinedMethod = providers.getMetaAccess().lookupJavaMethod(OptimizedCallTarget.getCallInlinedMethod());
         this.callSiteProxyMethod = providers.getMetaAccess().lookupJavaMethod(GraalFrameInstance.CallNodeFrame.METHOD);
+        this.nodesInstancesOf = new ArrayList<>();
+        this.nodesDeopt = new ArrayList<>();
 
         try {
             callRootMethod = providers.getMetaAccess().lookupJavaMethod(OptimizedCallTarget.class.getDeclaredMethod("callRoot", Object[].class));
@@ -199,6 +203,24 @@ public class PartialEvaluator {
         return graph;
     }
 
+    private void removeNodes(StructuredGraph graph) {
+        if (!nodesInstancesOf.isEmpty()) {
+            for (Node n : nodesInstancesOf) {
+                n.replaceAtUsages(null);
+                n.safeDelete();
+            }
+        }
+        deadCodeElimination(graph);
+
+        if (!nodesDeopt.isEmpty()) {
+            for (Node n : nodesDeopt) {
+                n.replaceAtUsages(null);
+                graph.removeFixed((FixedWithNextNode) n);
+            }
+        }
+        deadCodeElimination(graph);
+    }
+
     @SuppressWarnings("try")
     public StructuredGraph createGraph(final OptimizedCallTarget callTarget, AllowAssumptions allowAssumptions, boolean openCL) {
         try (Scope c = Debug.scope("TruffleTree")) {
@@ -229,6 +251,8 @@ public class PartialEvaluator {
         } catch (Throwable e) {
             throw Debug.handle(e);
         }
+
+        removeNodes(graph);
 
         return graph;
     }
@@ -471,6 +495,12 @@ public class PartialEvaluator {
         return decodingInvocationPlugins;
     }
 
+    private static void deadCodeElimination(StructuredGraph graph) {
+        Providers providers1 = GraalOCLBackendConnector.getProviders();
+        new CanonicalizerPhase().apply(graph, new PhaseContext(providers1));
+        new DeadCodeEliminationPhase().apply(graph);
+    }
+
     @SuppressWarnings({"try", "unused"})
     private void fastPartialEvaluation(OptimizedCallTarget callTarget, StructuredGraph graph, PhaseContext baseContext, HighTierContext tierContext) {
         if (GraphPE.getValue()) {
@@ -488,33 +518,40 @@ public class PartialEvaluator {
         if (isOpeNCL()) {
             // Analyse OpenCL annotations
             for (Node node : graph.getNodes()) {
+
+                System.out.println("Processing :   " + node);
+
                 if (node instanceof LoadFieldNode) {
                     LoadFieldNode fieldNode = (LoadFieldNode) node;
                     ResolvedJavaField field = fieldNode.field();
                     if (field.getAnnotation(OpenCLInstanceOf.class) != null) {
-                        System.out.println("FiledNode OpenCL dependency");
+                        System.out.println("FiledNode OpenCL dependency: " + fieldNode);
 
-                        Node n = fieldNode.successors().first();
-                        boolean found = false;
-                        while (!found) {
-                            n = n.successors().first();
-                            if (n instanceof FixedGuardNode) {
-                                FixedGuardNode fixed = (FixedGuardNode) n;
-                                LogicNode condition = fixed.condition();
+                        Node loadIndexed = fieldNode.successors().first();
 
-                                if (condition instanceof InstanceOfNode) {
-                                    condition.markDeleted();
-// condition.replaceAtUsages(null);
-// condition.safeDelete();
-                                    found = false;
-                                    System.out.println("Deleted");
-                                }
+                        System.out.println("Getting successor: " + loadIndexed);
+
+                        Node fixedGuard = loadIndexed.successors().first();
+
+                        if (fixedGuard instanceof FixedGuardNode) {
+                            FixedGuardNode fixedGuardNode = (FixedGuardNode) fixedGuard;
+                            LogicNode condition = fixedGuardNode.condition();
+
+                            if (condition instanceof InstanceOfNode) {
+                                System.out.println("Deleted node: " + condition);
+                                nodesDeopt.add(fixedGuardNode);
+                                nodesInstancesOf.add(condition);
                             }
+                        } else {
+                            continue;
                         }
+                        // deadCodeElimination(graph);
                     }
                 }
             }
         }
+
+        System.out.println("End of OpenCL check nodes");
 
         for (MethodCallTargetNode methodCallTargetNode : graph.getNodes(MethodCallTargetNode.TYPE)) {
             StructuredGraph inlineGraph = providers.getReplacements().getSubstitution(methodCallTargetNode.targetMethod(), methodCallTargetNode.invoke().bci());
