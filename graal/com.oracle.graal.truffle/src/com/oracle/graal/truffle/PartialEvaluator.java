@@ -101,7 +101,7 @@ import com.oracle.graal.truffle.substitutions.TruffleGraphBuilderPlugins;
 import com.oracle.graal.truffle.substitutions.TruffleInvocationPluginProvider;
 import com.oracle.graal.virtual.phases.ea.PartialEscapePhase;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.OpenCLInstanceOf;
+import com.oracle.truffle.api.CompilerDirectives.OpenCLKnownType;
 import com.oracle.truffle.api.CompilerDirectives.OpenCLScope;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -506,7 +506,7 @@ public class PartialEvaluator {
         if (node instanceof LoadFieldNode) {
             LoadFieldNode fieldNode = (LoadFieldNode) node;
             ResolvedJavaField field = fieldNode.field();
-            if (field.getAnnotation(OpenCLInstanceOf.class) != null) {
+            if (field.getAnnotation(OpenCLKnownType.class) != null) {
                 System.out.println("FiledNode OpenCL dependency: " + fieldNode);
 
                 Node loadIndexed = fieldNode.successors().first();

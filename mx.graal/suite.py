@@ -48,7 +48,7 @@ suite = {
             },
             {
                "name" : "truffle",
-               "version" : "9e4dd6dc458ea3693d0bee96ebdddd495de57b8c",
+               "version" : "c7b34b8f3ae990123eec4c8ed5c776b3a7030a36",
                "urls" : [
                     {"url" : "ssh://hg@bitbucket.org/juanfumero/trufflex", "kind" : "hg"},
                 ]
