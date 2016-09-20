@@ -70,6 +70,7 @@ import com.oracle.graal.nodes.StructuredGraph;
 import com.oracle.graal.nodes.StructuredGraph.AllowAssumptions;
 import com.oracle.graal.nodes.ValueNode;
 import com.oracle.graal.nodes.calc.FloatingNode;
+import com.oracle.graal.nodes.calc.IntegerEqualsNode;
 import com.oracle.graal.nodes.java.CheckCastNode;
 import com.oracle.graal.nodes.java.InstanceOfNode;
 import com.oracle.graal.nodes.java.LoadFieldNode;
@@ -101,6 +102,7 @@ import com.oracle.graal.truffle.substitutions.TruffleGraphBuilderPlugins;
 import com.oracle.graal.truffle.substitutions.TruffleInvocationPluginProvider;
 import com.oracle.graal.virtual.phases.ea.PartialEscapePhase;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.OpenCLArrayComplete;
 import com.oracle.truffle.api.CompilerDirectives.OpenCLKnownType;
 import com.oracle.truffle.api.CompilerDirectives.OpenCLScope;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -127,8 +129,9 @@ public class PartialEvaluator {
     private final InvocationPlugins decodingInvocationPlugins;
     private boolean isOpeNCL = false;
 
-    private ArrayList<Node> nodesInstancesOf;
-    private ArrayList<Node> nodesDeopt;
+    private ArrayList<Node> nodesInstancesOf = new ArrayList<>();
+    private ArrayList<Node> nodesDeopt = new ArrayList<>();
+    private ArrayList<Node> nodesComplete = new ArrayList<>();
 
     public PartialEvaluator(Providers providers, GraphBuilderConfiguration configForRoot, SnippetReflectionProvider snippetReflection, Architecture architecture) {
         this.providers = providers;
@@ -138,8 +141,6 @@ public class PartialEvaluator {
         this.callDirectMethod = providers.getMetaAccess().lookupJavaMethod(OptimizedCallTarget.getCallDirectMethod());
         this.callInlinedMethod = providers.getMetaAccess().lookupJavaMethod(OptimizedCallTarget.getCallInlinedMethod());
         this.callSiteProxyMethod = providers.getMetaAccess().lookupJavaMethod(GraalFrameInstance.CallNodeFrame.METHOD);
-        this.nodesInstancesOf = new ArrayList<>();
-        this.nodesDeopt = new ArrayList<>();
 
         try {
             callRootMethod = providers.getMetaAccess().lookupJavaMethod(OptimizedCallTarget.class.getDeclaredMethod("callRoot", Object[].class));
@@ -211,6 +212,15 @@ public class PartialEvaluator {
                 n.safeDelete();
             }
         }
+        deadCodeElimination(graph);
+
+        if (!nodesComplete.isEmpty()) {
+            for (Node n : nodesComplete) {
+                n.replaceAtUsages(null);
+                n.safeDelete();
+            }
+        }
+
         deadCodeElimination(graph);
 
         if (!nodesDeopt.isEmpty()) {
@@ -523,27 +533,21 @@ public class PartialEvaluator {
         }
     }
 
-    private void processOpenCLScope(Node node) {
+    private void processOpenCLArrayComplete(Node node) {
+
         if (node instanceof LoadFieldNode) {
             LoadFieldNode fieldNode = (LoadFieldNode) node;
             ResolvedJavaField field = fieldNode.field();
-            if (field.getAnnotation(OpenCLScope.class) != null) {
-                System.out.println("FiledNode OpenCL dependency: " + fieldNode);
-
-                Node loadIndexed = fieldNode.successors().first();
-
-                System.out.println("Getting successor: " + loadIndexed);
-
-                Node fixedGuard = loadIndexed.successors().first();
-
+            if (field.getAnnotation(OpenCLArrayComplete.class) != null) {
+                System.out.println(" >>>>>>>>>>>> @OpenCLArrayComplete annotation found");
+                Node fixedGuard = node.successors().first();
                 if (fixedGuard instanceof FixedGuardNode) {
                     FixedGuardNode fixedGuardNode = (FixedGuardNode) fixedGuard;
                     LogicNode condition = fixedGuardNode.condition();
-
-                    if (condition instanceof InstanceOfNode) {
-                        System.out.println("Deleted node: " + condition);
+                    if (condition instanceof IntegerEqualsNode) {
+                        System.out.println(" >>>>>> REMOVING according to @OpenCLArrayComplete");
                         nodesDeopt.add(fixedGuardNode);
-                        nodesInstancesOf.add(condition);
+                        nodesComplete.add(condition);
                     }
                 } else {
                     return;
@@ -566,10 +570,16 @@ public class PartialEvaluator {
         // Perform deoptimize to guard conversion.
         new ConvertDeoptimizeToGuardPhase().apply(graph, tierContext);
 
-        // Analyse OpenCL annotations
         if (isOpeNCL()) {
+
+            // Process @OpenCLKnownType annotation
             for (Node node : graph.getNodes()) {
                 processOpenCLKnownType(node);
+            }
+
+            // Process @OpenCLArrayComplete annotation
+            for (Node node : graph.getNodes()) {
+                processOpenCLArrayComplete(node);
             }
         }
 
