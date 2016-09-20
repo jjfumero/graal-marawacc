@@ -502,25 +502,17 @@ public class PartialEvaluator {
         new DeadCodeEliminationPhase().apply(graph);
     }
 
-    private void processOpenCLInstanceOfAnnotation(Node node) {
+    private void processOpenCLKnownType(Node node) {
         if (node instanceof LoadFieldNode) {
             LoadFieldNode fieldNode = (LoadFieldNode) node;
             ResolvedJavaField field = fieldNode.field();
             if (field.getAnnotation(OpenCLKnownType.class) != null) {
-                System.out.println("FiledNode OpenCL dependency: " + fieldNode);
-
                 Node loadIndexed = fieldNode.successors().first();
-
-                System.out.println("Getting successor: " + loadIndexed);
-
                 Node fixedGuard = loadIndexed.successors().first();
-
                 if (fixedGuard instanceof FixedGuardNode) {
                     FixedGuardNode fixedGuardNode = (FixedGuardNode) fixedGuard;
                     LogicNode condition = fixedGuardNode.condition();
-
                     if (condition instanceof InstanceOfNode) {
-                        System.out.println("Deleted node: " + condition);
                         nodesDeopt.add(fixedGuardNode);
                         nodesInstancesOf.add(condition);
                     }
@@ -577,17 +569,9 @@ public class PartialEvaluator {
         // Analyse OpenCL annotations
         if (isOpeNCL()) {
             for (Node node : graph.getNodes()) {
-                System.out.println("Processing INSTANCEOF:   " + node);
-                processOpenCLInstanceOfAnnotation(node);
+                processOpenCLKnownType(node);
             }
-
-// for (Node node : graph.getNodes()) {
-// System.out.println("Processing SCOPE:   " + node);
-// processOpenCLScope(node);
-// }
         }
-
-        System.out.println("End of OpenCL check nodes");
 
         for (MethodCallTargetNode methodCallTargetNode : graph.getNodes(MethodCallTargetNode.TYPE)) {
             StructuredGraph inlineGraph = providers.getReplacements().getSubstitution(methodCallTargetNode.targetMethod(), methodCallTargetNode.invoke().bci());
