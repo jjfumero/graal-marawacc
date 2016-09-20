@@ -539,13 +539,11 @@ public class PartialEvaluator {
             LoadFieldNode fieldNode = (LoadFieldNode) node;
             ResolvedJavaField field = fieldNode.field();
             if (field.getAnnotation(OpenCLArrayComplete.class) != null) {
-                System.out.println(" >>>>>>>>>>>> @OpenCLArrayComplete annotation found");
                 Node fixedGuard = node.successors().first();
                 if (fixedGuard instanceof FixedGuardNode) {
                     FixedGuardNode fixedGuardNode = (FixedGuardNode) fixedGuard;
                     LogicNode condition = fixedGuardNode.condition();
                     if (condition instanceof IntegerEqualsNode) {
-                        System.out.println(" >>>>>> REMOVING according to @OpenCLArrayComplete");
                         nodesDeopt.add(fixedGuardNode);
                         nodesComplete.add(condition);
                     }
