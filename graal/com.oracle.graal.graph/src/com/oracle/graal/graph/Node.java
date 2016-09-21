@@ -1119,7 +1119,6 @@ public abstract class Node implements Cloneable, Formattable {
         }
     }
 
-    @Deprecated
     public int getId() {
         return id;
     }

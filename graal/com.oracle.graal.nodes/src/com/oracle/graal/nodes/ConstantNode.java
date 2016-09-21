@@ -499,6 +499,7 @@ public final class ConstantNode extends FloatingNode implements LIRLowerable, Co
         }
     }
 
+    @Override
     public int compareTo(ConstantNode o) {
         if (this.getId() == o.getId()) {
             return 0;

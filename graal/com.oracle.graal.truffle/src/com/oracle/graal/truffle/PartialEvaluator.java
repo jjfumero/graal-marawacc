@@ -24,6 +24,7 @@ package com.oracle.graal.truffle;
 
 import static com.oracle.graal.truffle.TruffleCompilerOptions.PrintTruffleExpansionHistogram;
 
+import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -104,7 +105,6 @@ import com.oracle.graal.virtual.phases.ea.PartialEscapePhase;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.OpenCLArrayComplete;
 import com.oracle.truffle.api.CompilerDirectives.OpenCLKnownType;
-import com.oracle.truffle.api.CompilerDirectives.OpenCLScope;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
@@ -534,7 +534,6 @@ public class PartialEvaluator {
     }
 
     private void processOpenCLArrayComplete(Node node) {
-
         if (node instanceof LoadFieldNode) {
             LoadFieldNode fieldNode = (LoadFieldNode) node;
             ResolvedJavaField field = fieldNode.field();
@@ -548,10 +547,26 @@ public class PartialEvaluator {
                         nodesComplete.add(condition);
                     }
                 } else {
+                    // nothing happens, there is no deopt point
                     return;
                 }
             }
         }
+    }
+
+    private void processOpenCLAnnotations(StructuredGraph graph) {
+        if (isOpeNCL()) {
+            // Process @OpenCLKnownType annotation
+            for (Node node : graph.getNodes()) {
+                processOpenCLKnownType(node);
+            }
+
+            // Process @OpenCLArrayComplete annotation
+            for (Node node : graph.getNodes()) {
+                processOpenCLArrayComplete(node);
+            }
+        }
+
     }
 
     @SuppressWarnings({"try", "unused"})
@@ -568,18 +583,7 @@ public class PartialEvaluator {
         // Perform deoptimize to guard conversion.
         new ConvertDeoptimizeToGuardPhase().apply(graph, tierContext);
 
-        if (isOpeNCL()) {
-
-            // Process @OpenCLKnownType annotation
-            for (Node node : graph.getNodes()) {
-                processOpenCLKnownType(node);
-            }
-
-            // Process @OpenCLArrayComplete annotation
-            for (Node node : graph.getNodes()) {
-                processOpenCLArrayComplete(node);
-            }
-        }
+        processOpenCLAnnotations(graph);
 
         for (MethodCallTargetNode methodCallTargetNode : graph.getNodes(MethodCallTargetNode.TYPE)) {
             StructuredGraph inlineGraph = providers.getReplacements().getSubstitution(methodCallTargetNode.targetMethod(), methodCallTargetNode.invoke().bci());
