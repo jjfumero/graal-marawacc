@@ -24,7 +24,6 @@ package com.oracle.graal.truffle;
 
 import static com.oracle.graal.truffle.TruffleCompilerOptions.PrintTruffleExpansionHistogram;
 
-import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -230,6 +229,10 @@ public class PartialEvaluator {
             }
         }
         deadCodeElimination(graph);
+
+        nodesComplete.clear();
+        nodesDeopt.clear();
+        nodesInstancesOf.clear();
     }
 
     @SuppressWarnings("try")
@@ -264,7 +267,6 @@ public class PartialEvaluator {
         }
 
         removeNodes(graph);
-
         return graph;
     }
 
@@ -566,7 +568,6 @@ public class PartialEvaluator {
                 processOpenCLArrayComplete(node);
             }
         }
-
     }
 
     @SuppressWarnings({"try", "unused"})
