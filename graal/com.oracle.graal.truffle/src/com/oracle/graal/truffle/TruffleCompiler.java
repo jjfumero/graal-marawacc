@@ -41,7 +41,7 @@ import jdk.vm.ci.meta.ConstantReflectionProvider;
 import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.SpeculationLog;
-import uk.ac.ed.marawacc.compilation.MarawaccGraalIR;
+import uk.ac.ed.marawacc.compilation.MarawaccGraalIRCache;
 
 import com.oracle.graal.api.replacements.SnippetReflectionProvider;
 import com.oracle.graal.compiler.target.Backend;
@@ -194,7 +194,7 @@ public abstract class TruffleCompiler {
                 if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
                     System.out.println("[ASTX] Inserting GRAPH for GPU Compilation Queue");
                 }
-                MarawaccGraalIR.getInstance().insertCallTargetID(graph.graphId(), compilable.getIDForOpenCL());
+                MarawaccGraalIRCache.getInstance().insertCallTargetID(graph.graphId(), compilable.getIDForOpenCL());
             }
 
             if (Thread.currentThread().isInterrupted()) {

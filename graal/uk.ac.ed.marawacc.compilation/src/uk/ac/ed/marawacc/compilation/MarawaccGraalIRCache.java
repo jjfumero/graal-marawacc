@@ -4,9 +4,9 @@ import java.util.HashMap;
 
 import com.oracle.graal.nodes.StructuredGraph;
 
-public class MarawaccGraalIR {
+public class MarawaccGraalIRCache {
 
-    private static MarawaccGraalIR _instance;
+    private static MarawaccGraalIRCache _instance;
 
     private static int counter = 0;
 
@@ -16,14 +16,14 @@ public class MarawaccGraalIR {
     // CallTargetID -> StructuredGraph
     private HashMap<Long, StructuredGraph> compilationTable;
 
-    public static MarawaccGraalIR getInstance() {
+    public static MarawaccGraalIRCache getInstance() {
         if (_instance == null) {
-            _instance = new MarawaccGraalIR();
+            _instance = new MarawaccGraalIRCache();
         }
         return _instance;
     }
 
-    private MarawaccGraalIR() {
+    private MarawaccGraalIRCache() {
         compilationTable = new HashMap<>();
         graphsTable = new HashMap<>();
     }
@@ -71,6 +71,16 @@ public class MarawaccGraalIR {
     public void printInfo() {
         System.out.println(graphsTable);
         System.out.println(compilationTable);
+    }
+
+    /**
+     * We remove the entry from the Optimisation Table
+     *
+     * @param idGraph
+     */
+    public void deoptimize(long idGraph) {
+        compilationTable.remove(idGraph);
+        graphsTable.remove(idGraph);
     }
 
 }

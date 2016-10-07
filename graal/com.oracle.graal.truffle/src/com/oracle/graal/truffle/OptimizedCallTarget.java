@@ -116,10 +116,16 @@ public class OptimizedCallTarget extends InstalledCode implements RootCallTarget
         return rootNode;
     }
 
+    @Override
     public void generateIDForOpenCL() {
-        if (this.targetID == -1) {
+        if (this.targetID == RootCallTarget.OCL_INIT) {
             targetID = (new Random()).nextLong();
         }
+    }
+
+    @Override
+    public void resetIDForOpenCL() {
+        this.targetID = RootCallTarget.OCL_INIT;
     }
 
     public long getIDForOpenCL() {

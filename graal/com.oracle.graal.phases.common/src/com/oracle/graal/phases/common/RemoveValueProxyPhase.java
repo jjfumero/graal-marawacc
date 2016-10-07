@@ -22,7 +22,7 @@
  */
 package com.oracle.graal.phases.common;
 
-import uk.ac.ed.marawacc.compilation.MarawaccGraalIR;
+import uk.ac.ed.marawacc.compilation.MarawaccGraalIRCache;
 
 import com.oracle.graal.nodes.EntryProxyNode;
 import com.oracle.graal.nodes.FrameState;
@@ -52,8 +52,8 @@ public class RemoveValueProxyPhase extends Phase {
         }
         graph.setHasValueProxies(false);
 
-        if (MarawaccGraalIR.getInstance().isCompiledGraph(graph.graphId())) {
-            MarawaccGraalIR.getInstance().updateGraph(graph);
+        if (MarawaccGraalIRCache.getInstance().isCompiledGraph(graph.graphId())) {
+            MarawaccGraalIRCache.getInstance().updateGraph(graph);
         }
     }
 }
