@@ -39,7 +39,7 @@ suite = {
             {
                "name" : "jvmci",
                "optional" : "true",
-               "version" : "bdd3b33c527fb424c28b8da1e3ac9e33ef52b933",
+               "version" : "b4a9582db9b0919a0a1005618e211cbee839b20a",
                "urls" : [
                     {"url" : "ssh://hg@bitbucket.org/juanfumero/jvmcix", "kind" : "hg"},
                     #{"url" : "http://lafo.ssw.uni-linz.ac.at/hg/graal-jvmci-8", "kind" : "hg"},
