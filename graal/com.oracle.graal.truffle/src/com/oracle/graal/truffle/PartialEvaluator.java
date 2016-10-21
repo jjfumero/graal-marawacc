@@ -514,6 +514,12 @@ public class PartialEvaluator {
         new DeadCodeEliminationPhase().apply(graph);
     }
 
+    /**
+     * If performs a FixedGuard elimination because the input type is known at compilation type.
+     * Therefore no need check.
+     *
+     * @param node
+     */
     private void processOpenCLKnownType(Node node) {
         if (node instanceof LoadFieldNode) {
             LoadFieldNode fieldNode = (LoadFieldNode) node;
@@ -535,12 +541,16 @@ public class PartialEvaluator {
         }
     }
 
+    /**
+     * If performs a FixedGuard elimination for the checks if the input array is complete.
+     *
+     * @param node
+     */
     private void processOpenCLArrayComplete(Node node) {
         if (node instanceof LoadFieldNode) {
             LoadFieldNode fieldNode = (LoadFieldNode) node;
             ResolvedJavaField field = fieldNode.field();
             if (field.getAnnotation(ArrayComplete.class) != null) {
-                System.out.println("Processing ARRAY COMPLETE!!!!!!!!");
                 Node fixedGuard = node.successors().first();
                 if (fixedGuard instanceof FixedGuardNode) {
                     FixedGuardNode fixedGuardNode = (FixedGuardNode) fixedGuard;
