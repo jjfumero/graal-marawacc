@@ -236,14 +236,14 @@ public class PartialEvaluator {
     }
 
     @SuppressWarnings("try")
-    public StructuredGraph createGraph(final OptimizedCallTarget callTarget, AllowAssumptions allowAssumptions, boolean openCL) {
+    public StructuredGraph createGraphWithOpenCL(final OptimizedCallTarget callTarget, AllowAssumptions allowAssumptions) {
         try (Scope c = Debug.scope("TruffleTree")) {
             Debug.dump(callTarget, callTarget.toString());
         } catch (Throwable e) {
             throw Debug.handle(e);
         }
 
-        isOpeNCL = openCL;
+        this.isOpeNCL = true;
 
         final StructuredGraph graph = new StructuredGraph(callTarget.toString(), callRootMethod, allowAssumptions, callTarget.getSpeculationLog());
         assert graph != null : "no graph for root method";
