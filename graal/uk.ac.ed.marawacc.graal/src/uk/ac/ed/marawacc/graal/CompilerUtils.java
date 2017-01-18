@@ -131,7 +131,7 @@ public interface CompilerUtils {
     }
 
     /**
-     * Utility for printing the bytecodes associated to the method.
+     * Utility for printing the bytecode associated to the method.
      *
      * @param method
      */

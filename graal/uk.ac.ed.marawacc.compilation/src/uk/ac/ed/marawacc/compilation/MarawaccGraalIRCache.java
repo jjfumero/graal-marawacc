@@ -4,7 +4,7 @@ import java.util.HashMap;
 
 import com.oracle.graal.nodes.StructuredGraph;
 
-public class MarawaccGraalIRCache {
+public final class MarawaccGraalIRCache {
 
     private static MarawaccGraalIRCache _instance;
 
@@ -28,11 +28,11 @@ public class MarawaccGraalIRCache {
         graphsTable = new HashMap<>();
     }
 
-    public int getCounter() {
+    public static int getCounter() {
         return counter;
     }
 
-    public void insertCallTargetID(long idGraph, long idCallTarget) {
+    public synchronized void insertCallTargetID(long idGraph, long idCallTarget) {
         graphsTable.put(idGraph, idCallTarget);
     }
 
@@ -50,7 +50,7 @@ public class MarawaccGraalIRCache {
         return true;
     }
 
-    public boolean updateGraph(StructuredGraph graph) {
+    public synchronized boolean updateGraph(StructuredGraph graph) {
         Long idCallTarget = graphsTable.get(graph.graphId());
         if (idCallTarget != null && !compilationTable.containsKey(idCallTarget)) {
             compilationTable.put(idCallTarget, (StructuredGraph) graph.copy());
@@ -60,7 +60,7 @@ public class MarawaccGraalIRCache {
         return false;
     }
 
-    public synchronized StructuredGraph getCompiledGraph(long idCallTarget) {
+    public StructuredGraph getCompiledGraph(long idCallTarget) {
         if (compilationTable.containsKey(idCallTarget)) {
             return compilationTable.get(idCallTarget);
         } else {
@@ -74,7 +74,7 @@ public class MarawaccGraalIRCache {
     }
 
     /**
-     * We remove the entry from the Optimisation Table
+     * It removes the entry from the Compilation and Graphs Table.
      *
      * @param idGraph
      */

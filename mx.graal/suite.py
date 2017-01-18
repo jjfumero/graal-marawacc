@@ -1041,6 +1041,7 @@ suite = {
       "subDir" : "graal",
       "dependencies" : [
         "com.oracle.graal.compiler",
+        "uk.ac.ed.marawacc.compilation",
       ],
       "exclude" : deps(["JVMCI"]),
       "distDependencies" : [
