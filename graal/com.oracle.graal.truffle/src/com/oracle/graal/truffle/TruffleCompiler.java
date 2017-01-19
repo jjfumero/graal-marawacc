@@ -66,6 +66,7 @@ import com.oracle.graal.phases.tiers.Suites;
 import com.oracle.graal.phases.util.Providers;
 import com.oracle.graal.printer.GraphPrinterDumpHandler;
 import com.oracle.graal.truffle.nodes.AssumptionValidAssumption;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.nodes.SlowPathException;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -173,14 +174,14 @@ public abstract class TruffleCompiler {
         compilationNotify.notifyCompilationStarted(compilable);
 
         if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
-            System.out.println("GPU DEBUG: compiling <" + compilable.toString() + ">");
+            System.out.println("GPU DEBUG: compiling <" + compilable.toString() + "> :: ID: " + compilable.getIDForOpenCL());
         }
 
         try {
             PhaseSuite<HighTierContext> graphBuilderSuite = createGraphBuilderSuite();
 
             try (DebugCloseable a = PartialEvaluationTime.start(); DebugCloseable c = PartialEvaluationMemUse.start()) {
-                if (compilable.getIDForOpenCL() == -1) {
+                if (compilable.getIDForOpenCL() == RootCallTarget.OCL_INIT) {
                     graph = partialEvaluator.createGraph(compilable, AllowAssumptions.YES);
                 } else {
                     graph = partialEvaluator.createGraphWithOpenCL(compilable, AllowAssumptions.YES);
@@ -190,7 +191,7 @@ public abstract class TruffleCompiler {
                 }
             }
 
-            if (compilable.getIDForOpenCL() != -1) {
+            if (compilable.getIDForOpenCL() != RootCallTarget.OCL_INIT) {
                 if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue()) {
                     System.out.println("[ASTX] Inserting GRAPH for GPU Compilation Queue");
                 }

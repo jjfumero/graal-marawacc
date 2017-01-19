@@ -128,8 +128,14 @@ public class OptimizedCallTarget extends InstalledCode implements RootCallTarget
         this.targetID = RootCallTarget.OCL_INIT;
     }
 
+    @Override
     public long getIDForOpenCL() {
         return targetID;
+    }
+
+    @Override
+    public void setIDForOpenCL(long id) {
+        this.targetID = id;
     }
 
     public OptimizedCallTarget(OptimizedCallTarget sourceCallTarget, RootNode rootNode, GraalTruffleRuntime runtime, CompilationPolicy compilationPolicy, SpeculationLog speculationLog) {
