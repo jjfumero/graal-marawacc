@@ -102,6 +102,7 @@ import com.oracle.graal.truffle.substitutions.TruffleGraphBuilderPlugins;
 import com.oracle.graal.truffle.substitutions.TruffleInvocationPluginProvider;
 import com.oracle.graal.virtual.phases.ea.PartialEscapePhase;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.CompilerDirectives.ArrayComplete;
 import com.oracle.truffle.api.CompilerDirectives.KnownType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -266,7 +267,8 @@ public class PartialEvaluator {
             throw Debug.handle(e);
         }
 
-        removeNodes(graph);
+        // removeNodes(graph);
+
         return graph;
     }
 
@@ -613,7 +615,10 @@ public class PartialEvaluator {
         // Perform deoptimize to guard conversion.
         new ConvertDeoptimizeToGuardPhase().apply(graph, tierContext);
 
-        processOpenCLAnnotations(graph);
+        if (callTarget.getIDForOpenCL() != RootCallTarget.OCL_INIT) {
+            processOpenCLAnnotations(graph);
+            removeNodes(graph);
+        }
 
         for (MethodCallTargetNode methodCallTargetNode : graph.getNodes(MethodCallTargetNode.TYPE)) {
             StructuredGraph inlineGraph = providers.getReplacements().getSubstitution(methodCallTargetNode.targetMethod(), methodCallTargetNode.invoke().bci());
