@@ -25,6 +25,7 @@ package com.oracle.graal.truffle;
 import java.util.Arrays;
 
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.KnownType;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
@@ -38,7 +39,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  */
 public final class FrameWithBoxing implements VirtualFrame, MaterializedFrame {
     private final FrameDescriptor descriptor;
-    private final Object[] arguments;
+    @KnownType private final Object[] arguments;
     private Object[] locals;
 
     public FrameWithBoxing(FrameDescriptor descriptor, Object[] arguments) {

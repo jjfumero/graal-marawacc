@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -53,6 +54,7 @@ import com.oracle.graal.debug.Debug;
 import com.oracle.graal.debug.Debug.Scope;
 import com.oracle.graal.debug.Indent;
 import com.oracle.graal.graph.Node;
+import com.oracle.graal.graph.iterators.NodeIterable;
 import com.oracle.graal.graphbuilderconf.GraphBuilderConfiguration;
 import com.oracle.graal.graphbuilderconf.GraphBuilderConfiguration.Plugins;
 import com.oracle.graal.graphbuilderconf.GraphBuilderContext;
@@ -71,9 +73,11 @@ import com.oracle.graal.nodes.StructuredGraph.AllowAssumptions;
 import com.oracle.graal.nodes.ValueNode;
 import com.oracle.graal.nodes.calc.FloatingNode;
 import com.oracle.graal.nodes.calc.IntegerEqualsNode;
+import com.oracle.graal.nodes.calc.IsNullNode;
 import com.oracle.graal.nodes.java.CheckCastNode;
 import com.oracle.graal.nodes.java.InstanceOfNode;
 import com.oracle.graal.nodes.java.LoadFieldNode;
+import com.oracle.graal.nodes.java.LoadIndexedNode;
 import com.oracle.graal.nodes.java.MethodCallTargetNode;
 import com.oracle.graal.nodes.virtual.VirtualInstanceNode;
 import com.oracle.graal.nodes.virtual.VirtualObjectNode;
@@ -102,10 +106,10 @@ import com.oracle.graal.truffle.substitutions.TruffleGraphBuilderPlugins;
 import com.oracle.graal.truffle.substitutions.TruffleInvocationPluginProvider;
 import com.oracle.graal.virtual.phases.ea.PartialEscapePhase;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.CompilerDirectives.ArrayComplete;
 import com.oracle.truffle.api.CompilerDirectives.KnownType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 /**
@@ -132,6 +136,7 @@ public class PartialEvaluator {
     private ArrayList<Node> nodesInstancesOf = new ArrayList<>();
     private ArrayList<Node> nodesDeopt = new ArrayList<>();
     private ArrayList<Node> nodesComplete = new ArrayList<>();
+    private ArrayList<Node> nodesCheckCast = new ArrayList<>();
 
     public PartialEvaluator(Providers providers, GraphBuilderConfiguration configForRoot, SnippetReflectionProvider snippetReflection, Architecture architecture) {
         this.providers = providers;
@@ -206,6 +211,7 @@ public class PartialEvaluator {
     }
 
     private void removeNodes(StructuredGraph graph) {
+
         if (!nodesInstancesOf.isEmpty()) {
             for (Node n : nodesInstancesOf) {
                 n.replaceAtUsages(null);
@@ -223,6 +229,14 @@ public class PartialEvaluator {
 
         deadCodeElimination(graph);
 
+        if (!nodesCheckCast.isEmpty()) {
+            for (Node n : nodesCheckCast) {
+                graph.replaceFixed((FixedWithNextNode) n, n.predecessor());
+            }
+        }
+
+        deadCodeElimination(graph);
+
         if (!nodesDeopt.isEmpty()) {
             for (Node n : nodesDeopt) {
                 n.replaceAtUsages(null);
@@ -234,6 +248,7 @@ public class PartialEvaluator {
         nodesComplete.clear();
         nodesDeopt.clear();
         nodesInstancesOf.clear();
+        nodesCheckCast.clear();
     }
 
     @SuppressWarnings("try")
@@ -569,35 +584,84 @@ public class PartialEvaluator {
         }
     }
 
-    private void processOpenCLAnnotations(StructuredGraph graph) {
-        if (isOpeNCL()) {
-            /**
-             * Process @KnownType annotation. It checks the following code.
-             *
-             * <code>
-             * if (!input instanceof X) {
-             *     DEOPT;
-             * }
-             * </code>
-             *
-             */
-            for (Node node : graph.getNodes()) {
-                processOpenCLKnownType(node);
+    private void processOpenCLIsNullAndCheckCast(Node node) {
+        if (node instanceof LoadFieldNode) {
+            LoadFieldNode fieldNode = (LoadFieldNode) node;
+            ResolvedJavaField field = fieldNode.field();
+            if (field.getAnnotation(KnownType.class) != null) {
+                Node loadIndexed = fieldNode.successors().first();
+                if (!(loadIndexed instanceof LoadIndexedNode)) {
+                    return;
+                }
+                Node checkCast = loadIndexed.successors().first();
+                if (!(checkCast instanceof CheckCastNode)) {
+                    return;
+                }
+                Node fixedGuard = checkCast.successors().first();
+                if (fixedGuard instanceof FixedGuardNode) {
+                    FixedGuardNode fixedGuardNode = (FixedGuardNode) fixedGuard;
+                    LogicNode condition = fixedGuardNode.condition();
+                    if (condition instanceof IsNullNode) {
+                        nodesDeopt.add(fixedGuardNode);
+                        nodesInstancesOf.add(condition);
+                        nodesCheckCast.add(checkCast);
+                    }
+                } else {
+                    return;
+                }
             }
+        }
+    }
 
-            /**
-             * Process @ArrayComplete annotation. It checks the following code.
-             *
-             * <code>
-             * if (!vector#complete) {
-             *     DEOPT.
-             * }
-             * </code>
-             *
-             */
-            for (Node node : graph.getNodes()) {
-                processOpenCLArrayComplete(node);
-            }
+    /**
+     * Process @KnownType annotation. It checks the following code.
+     *
+     * <p>
+     * <code>
+     * if (!input instanceof X) {
+     *     DEOPT;
+     * }
+     * </code>
+     * </p>
+     *
+     * Process @ArrayComplete annotation. It checks the following code.
+     *
+     * <p>
+     * <code>
+     * if (!vector#complete) {
+     *     DEOPT;
+     * }
+     * </code>
+     * </p>
+     *
+     */
+    private void processOpenCLAnnotations(StructuredGraph graph) {
+        for (Node node : graph.getNodes()) {
+            processOpenCLKnownType(node);
+        }
+        for (Node node : graph.getNodes()) {
+            processOpenCLArrayComplete(node);
+        }
+    }
+
+    /**
+     * Process @KnownType annotation with null references
+     *
+     *
+     * <p>
+     * <code>
+     * if (x == null) {
+     *     DEOPT;
+     * }
+     * </code>
+     * </p>
+     *
+     *
+     * @param graph
+     */
+    private void processResidualOpenCLAnnotation(StructuredGraph graph) {
+        for (Node node : graph.getNodes()) {
+            processOpenCLIsNullAndCheckCast(node);
         }
     }
 
@@ -615,9 +679,16 @@ public class PartialEvaluator {
         // Perform deoptimize to guard conversion.
         new ConvertDeoptimizeToGuardPhase().apply(graph, tierContext);
 
-        if (callTarget.getIDForOpenCL() != RootCallTarget.OCL_INIT) {
-            processOpenCLAnnotations(graph);
-            removeNodes(graph);
+        if (isOpeNCL() && callTarget.getIDForOpenCL() != RootCallTarget.OCL_INIT) {
+            for (int i = 0; i < 2; i++) {
+                Debug.dump(graph, "Input OPENCL PE");
+                processOpenCLAnnotations(graph);
+                removeNodes(graph);
+                Debug.dump(graph, "After OpenCL Removal");
+                processResidualOpenCLAnnotation(graph);
+                removeNodes(graph);
+                Debug.dump(graph, "After RESIDUAL");
+            }
         }
 
         for (MethodCallTargetNode methodCallTargetNode : graph.getNodes(MethodCallTargetNode.TYPE)) {
