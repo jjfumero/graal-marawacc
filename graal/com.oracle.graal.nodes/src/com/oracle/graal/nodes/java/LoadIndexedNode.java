@@ -22,6 +22,8 @@
  */
 package com.oracle.graal.nodes.java;
 
+import java.lang.annotation.Annotation;
+
 import jdk.vm.ci.meta.ConstantReflectionProvider;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;

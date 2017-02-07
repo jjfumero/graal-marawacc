@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -54,7 +53,6 @@ import com.oracle.graal.debug.Debug;
 import com.oracle.graal.debug.Debug.Scope;
 import com.oracle.graal.debug.Indent;
 import com.oracle.graal.graph.Node;
-import com.oracle.graal.graph.iterators.NodeIterable;
 import com.oracle.graal.graphbuilderconf.GraphBuilderConfiguration;
 import com.oracle.graal.graphbuilderconf.GraphBuilderConfiguration.Plugins;
 import com.oracle.graal.graphbuilderconf.GraphBuilderContext;
@@ -137,6 +135,8 @@ public class PartialEvaluator {
     private ArrayList<Node> nodesDeopt = new ArrayList<>();
     private ArrayList<Node> nodesComplete = new ArrayList<>();
     private ArrayList<Node> nodesCheckCast = new ArrayList<>();
+    private ArrayList<Node> loadIndexedNodes = new ArrayList<>();
+    private ArrayList<Node> loadFieldNodes = new ArrayList<>();
 
     public PartialEvaluator(Providers providers, GraphBuilderConfiguration configForRoot, SnippetReflectionProvider snippetReflection, Architecture architecture) {
         this.providers = providers;
@@ -283,6 +283,26 @@ public class PartialEvaluator {
         }
 
         // removeNodes(graph);
+
+        for (Node n : loadIndexedNodes) {
+            if (n.isAlive()) {
+                // System.out.println("INDEX NODE : " + n + " is alive");
+            }
+        }
+
+        for (Node n : loadFieldNodes) {
+            if (n.isAlive()) {
+                // System.out.println("FIELD NODE : " + n + " is alive");
+                /*
+                 * For Array Programming - the input is loaded from an array of arguments, which is,
+                 * indeed, another array
+                 */
+                LoadFieldNode f = (LoadFieldNode) n;
+                if (f.object() instanceof LoadIndexedNode) {
+                    ((LoadIndexedNode) (f.object())).setAnnotation(KnownType.class);
+                }
+            }
+        }
 
         return graph;
     }
@@ -526,8 +546,8 @@ public class PartialEvaluator {
     }
 
     private static void deadCodeElimination(StructuredGraph graph) {
-        Providers providers1 = GraalOCLBackendConnector.getProviders();
-        new CanonicalizerPhase().apply(graph, new PhaseContext(providers1));
+        Providers providers = GraalOCLBackendConnector.getProviders();
+        new CanonicalizerPhase().apply(graph, new PhaseContext(providers));
         new DeadCodeEliminationPhase().apply(graph);
     }
 
@@ -613,6 +633,41 @@ public class PartialEvaluator {
         }
     }
 
+    private void isInputOpenCL(Node node) {
+        if (node instanceof LoadFieldNode) {
+            LoadFieldNode fieldNode = (LoadFieldNode) node;
+            ResolvedJavaField field = fieldNode.field();
+            if (field.getAnnotation(KnownType.class) != null) {
+                Node loadIndexed = fieldNode.successors().first();
+                if (loadIndexed instanceof LoadIndexedNode) {
+                    // Add List of LoadIndexNodes
+                    loadIndexedNodes.add(loadIndexed);
+
+                    // Search for LoadFieldNode
+                    Node loadFieldNode = loadIndexed.successors().first();
+                    if (loadFieldNode instanceof LoadFieldNode) {
+                        // Only add if there is a data dependency between LoadField and the
+                        // annotation
+                        if (((LoadFieldNode) loadFieldNode).object().equals(loadIndexed)) {
+                            if (((LoadIndexedNode) loadIndexed).array().equals(fieldNode)) {
+                                // Add List of LoadIndexNodes
+                                loadIndexedNodes.add(loadIndexed);
+                                loadFieldNodes.add(loadFieldNode);
+                            }
+                        }
+                    } else {
+                        return;
+                    }
+                } else {
+                    return;
+                }
+            } else {
+                return;
+            }
+        }
+        return;
+    }
+
     /**
      * Process @KnownType annotation. It checks the following code.
      *
@@ -665,6 +720,12 @@ public class PartialEvaluator {
         }
     }
 
+    private void identifyOpenCLInputs(StructuredGraph graph) {
+        for (Node node : graph.getNodes()) {
+            isInputOpenCL(node);
+        }
+    }
+
     @SuppressWarnings({"try", "unused"})
     private void fastPartialEvaluation(OptimizedCallTarget callTarget, StructuredGraph graph, PhaseContext baseContext, HighTierContext tierContext) {
         if (GraphPE.getValue()) {
@@ -689,6 +750,9 @@ public class PartialEvaluator {
                 removeNodes(graph);
                 Debug.dump(graph, "After RESIDUAL");
             }
+
+            // Identify Inputs
+            identifyOpenCLInputs(graph);
         }
 
         for (MethodCallTargetNode methodCallTargetNode : graph.getNodes(MethodCallTargetNode.TYPE)) {

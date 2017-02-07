@@ -47,6 +47,19 @@ public abstract class ValueNode extends com.oracle.graal.graph.Node {
      */
     protected Stamp stamp;
 
+    /**
+     * Annotation inherited from other nodes
+     */
+    private Class<?> annotation;
+
+    public void setAnnotation(Class<?> annotation) {
+        this.annotation = annotation;
+    }
+
+    public Class<?> getAnnotation() {
+        return annotation;
+    }
+
     public ValueNode(NodeClass<? extends ValueNode> c, Stamp stamp) {
         super(c);
         this.stamp = stamp;
