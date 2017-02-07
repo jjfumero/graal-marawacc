@@ -187,7 +187,7 @@ public abstract class TruffleCompiler {
                     graph = partialEvaluator.createGraphWithOpenCL(compilable, AllowAssumptions.YES);
                 }
                 if (TruffleCompilerOptions.TruffleTraceIRToGPU.getValue() && (compilable.getIDForOpenCL() != RootCallTarget.OCL_INIT)) {
-                    debugGraphToGPU(graph);
+                    // debugGraphToGPU(graph);
                 }
             }
 
